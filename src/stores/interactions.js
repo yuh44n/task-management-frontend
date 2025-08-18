@@ -14,7 +14,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get(`/tasks/${taskId}/comments`)
+      const { comments: commentsApi } = useApi()
+      const response = await commentsApi.getForTask(taskId)
       // Process comments to ensure user property exists
       const rawComments = response.data.comments.data || response.data.comments || []
       comments.value = rawComments.map(comment => ({
@@ -34,7 +35,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
   const addComment = async (taskId, commentData) => {
     error.value = null
     try {
-      const response = await api.post(`/tasks/${taskId}/comments`, commentData)
+      const { comments: commentsApi } = useApi()
+      const response = await commentsApi.create(taskId, commentData)
       const newComment = response.data.comment
       // Ensure user property exists
       if (!newComment.user) {
@@ -73,6 +75,7 @@ export const useInteractionsStore = defineStore('interactions', () => {
   const updateComment = async (interactionId, commentData) => {
     error.value = null
     try {
+      const { api } = useApi()
       const response = await api.put(`/interactions/${interactionId}/comment`, commentData)
       const updatedComment = response.data.comment
       // Ensure user property exists
@@ -96,6 +99,7 @@ export const useInteractionsStore = defineStore('interactions', () => {
   const deleteComment = async (interactionId) => {
     error.value = null
     try {
+      const { api } = useApi()
       await api.delete(`/interactions/${interactionId}/comment`)
       const index = comments.value.findIndex(c => c.id === interactionId)
       if (index !== -1) {
@@ -138,6 +142,7 @@ export const useInteractionsStore = defineStore('interactions', () => {
   const sendInvitation = async (taskId, invitationData) => {
     error.value = null
     try {
+      const { api } = useApi()
       const response = await api.post(`/tasks/${taskId}/invitations`, invitationData)
       return response.data.invitation
     } catch (err) {
@@ -156,7 +161,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
       console.log('Notification exists:', notificationExists)
       console.log('Invitation exists:', invitationExists)
       
-      const response = await api.post(`/interactions/${interactionId}/accept`)
+      const { invitations: invitationsApi } = useApi()
+      const response = await invitationsApi.accept(interactionId)
       console.log('Invitation acceptance API response:', response.data)
       
       // Remove from pending invitations list if it exists there
@@ -199,7 +205,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
       console.log('Notification exists:', notificationExists)
       console.log('Invitation exists:', invitationExists)
       
-      const response = await api.post(`/interactions/${interactionId}/decline`)
+      const { invitations: invitationsApi } = useApi()
+      const response = await invitationsApi.decline(interactionId)
       console.log('Invitation decline API response:', response.data)
       
       // Remove from pending invitations list if it exists there
@@ -237,7 +244,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/user/notifications', { params })
+      const { notifications: notificationsApi } = useApi()
+      const response = await notificationsApi.getAll()
       notifications.value = response.data.notifications.data || response.data.notifications
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
@@ -249,7 +257,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
 
   const getUnreadCount = async () => {
     try {
-      const response = await api.get('/user/notifications/unread-count')
+      const { notifications: notificationsApi } = useApi()
+      const response = await notificationsApi.getUnreadCount()
       return response.data.count
     } catch (err) {
       console.error('Failed to get unread count:', err)
@@ -260,7 +269,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
   const markAsRead = async (interactionId) => {
     error.value = null
     try {
-      const response = await api.patch(`/interactions/${interactionId}/read`)
+      const { notifications: notificationsApi } = useApi()
+      const response = await notificationsApi.markAsRead(interactionId)
       const updatedNotification = response.data.notification
       const index = notifications.value.findIndex(n => n.id === interactionId)
       if (index !== -1) {
@@ -292,6 +302,7 @@ export const useInteractionsStore = defineStore('interactions', () => {
   // Mentionable users
   const getMentionableUsers = async (taskId) => {
     try {
+      const { api } = useApi()
       const response = await api.get(`/tasks/${taskId}/mentionable-users`)
       return response.data.users
     } catch (err) {
