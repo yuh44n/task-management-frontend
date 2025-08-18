@@ -23,6 +23,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { auth } = useApi()
       const response = await auth.login(credentials)
+      
+      // Check if we have a valid response with user data
+      if (!response || !response.data || !response.data.user || !response.data.token) {
+        throw new Error('Invalid response from server')
+      }
+      
       const { user: userData, token: userToken } = response.data
       
       user.value = userData
@@ -32,15 +38,21 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('token', userToken)
       
       // Initialize notifications after successful login
-      const { useInteractionsStore } = await import('./interactions')
-      const interactionsStore = useInteractionsStore()
-      await interactionsStore.getUnreadCount()
-      await interactionsStore.fetchNotifications() // Add this line
-      await interactionsStore.fetchPendingInvitations()
+      try {
+        const { useInteractionsStore } = await import('./interactions')
+        const interactionsStore = useInteractionsStore()
+        await interactionsStore.getUnreadCount()
+        await interactionsStore.fetchNotifications()
+        await interactionsStore.fetchPendingInvitations()
+      } catch (notificationError) {
+        console.error('Error initializing notifications:', notificationError)
+        // Continue with login success even if notifications fail
+      }
       
       return { success: true }
     } catch (err) {
-      error.value = err.response?.data?.message || 'Login failed'
+      console.error('Login error:', err)
+      error.value = err.response?.data?.message || 'Login failed. Please try again.'
       return { success: false, error: error.value }
     } finally {
       loading.value = false
@@ -54,6 +66,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { auth } = useApi()
       const response = await auth.register(userData)
+      
+      // Check if we have a valid response with user data
+      if (!response || !response.data || !response.data.user || !response.data.token) {
+        throw new Error('Invalid response from server')
+      }
+      
       const { user: newUser, token: userToken } = response.data
       
       user.value = newUser
@@ -63,15 +81,21 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('token', userToken)
       
       // Initialize notifications after successful registration
-      const { useInteractionsStore } = await import('./interactions')
-      const interactionsStore = useInteractionsStore()
-      await interactionsStore.getUnreadCount()
-      await interactionsStore.fetchNotifications() // Add this line
-      await interactionsStore.fetchPendingInvitations()
+      try {
+        const { useInteractionsStore } = await import('./interactions')
+        const interactionsStore = useInteractionsStore()
+        await interactionsStore.getUnreadCount()
+        await interactionsStore.fetchNotifications()
+        await interactionsStore.fetchPendingInvitations()
+      } catch (notificationError) {
+        console.error('Error initializing notifications:', notificationError)
+        // Continue with registration success even if notifications fail
+      }
       
       return { success: true }
     } catch (err) {
-      error.value = err.response?.data?.message || 'Registration failed'
+      console.error('Registration error:', err)
+      error.value = err.response?.data?.message || 'Registration failed. Please try again.'
       return { success: false, error: error.value }
     } finally {
       loading.value = false

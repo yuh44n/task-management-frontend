@@ -265,7 +265,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/counter'
 import { useTasksStore } from '@/stores/tasks'
-import api from '@/utils/api'
+import { useApi } from '@/composables/useApi'
 import Sidebar from '@/components/Sidebar.vue'
 import TaskModal from '@/components/TaskModal.vue'
 import TaskComments from '@/components/TaskComments.vue'
@@ -387,6 +387,7 @@ const startCollaboration = async (task) => {
         console.log('Creating invitation for task ID:', taskId);
         
         // Create an invitation for the current user as a collaborator
+        const { api } = useApi();
         const response = await api.post(`/tasks/${taskId}/invitations`, {
           invited_user_id: authStore.user.id,
           role: 'collaborator',
@@ -398,7 +399,8 @@ const startCollaboration = async (task) => {
         if (response.data.success && response.data.invitation && response.data.invitation.id) {
           const interactionId = response.data.invitation.id;
           console.log('Accepting invitation with ID:', interactionId);
-          const acceptResponse = await api.post(`/interactions/${interactionId}/accept`);
+          const { invitations: invitationsApi } = useApi();
+          const acceptResponse = await invitationsApi.accept(interactionId);
           console.log('Auto-accepted invitation response:', acceptResponse.data);
         } else {
           console.error('Failed to get invitation ID from response:', response.data);

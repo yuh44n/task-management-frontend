@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import api from '@/utils/api'
+import { useApi } from '@/composables/useApi'
 
 export const useTasksStore = defineStore('tasks', () => {
   const tasks = ref([])
@@ -23,7 +23,8 @@ export const useTasksStore = defineStore('tasks', () => {
       if (filters.priority) params.append('priority', filters.priority)
       if (filters.search) params.append('search', filters.search)
       
-      const response = await api.get(`/tasks?${params}`)
+      const { tasks: tasksApi } = useApi()
+      const response = await tasksApi.getAll(Object.fromEntries(params))
       tasks.value = response.data.tasks.data || response.data.tasks
       
       // Calculate stats
@@ -43,7 +44,8 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null
     
     try {
-      const response = await api.post('/tasks', taskData)
+      const { tasks: tasksApi } = useApi()
+      const response = await tasksApi.create(taskData)
       tasks.value.unshift(response.data.task)
       calculateStats()
       return { success: true, data: response.data }
@@ -66,7 +68,8 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null
     
     try {
-      const response = await api.put(`/tasks/${taskId}`, taskData)
+      const { tasks: tasksApi } = useApi()
+      const response = await tasksApi.update(taskId, taskData)
       const index = tasks.value.findIndex(task => task.id === taskId)
       if (index !== -1) {
         tasks.value[index] = response.data.task
@@ -84,7 +87,8 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null
     
     try {
-      await api.delete(`/tasks/${taskId}`)
+      const { tasks: tasksApi } = useApi()
+      await tasksApi.delete(taskId)
       tasks.value = tasks.value.filter(task => task.id !== taskId)
       calculateStats()
       return { success: true }
@@ -114,6 +118,7 @@ export const useTasksStore = defineStore('tasks', () => {
   // Add this new method
   const getUsers = async () => {
     try {
+      const { api } = useApi()
       const response = await api.get('/tasks/users/list')
       return response.data
     } catch (err) {
