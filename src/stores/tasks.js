@@ -119,7 +119,7 @@ export const useTasksStore = defineStore('tasks', () => {
   const getUsers = async () => {
     try {
       const { api } = useApi()
-      const response = await api.get('/tasks/users/list')
+      const response = await api.get('/api/tasks/users/list')
       return response.data
     } catch (err) {
       console.error('Failed to fetch users:', err)

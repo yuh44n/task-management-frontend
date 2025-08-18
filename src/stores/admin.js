@@ -37,7 +37,8 @@ export const useAdminStore = defineStore('admin', () => {
     error.value = null
     
     try {
-      const response = await api.get('/admin/tasks')
+      const { admin: adminApi } = useApi()
+      const response = await adminApi.getAllTasks()
       allTasks.value = response.data.data || response.data
       return { success: true }
     } catch (err) {
@@ -53,7 +54,8 @@ export const useAdminStore = defineStore('admin', () => {
     error.value = null
     
     try {
-      const response = await api.get('/admin/stats')
+      const { admin: adminApi } = useApi()
+      const response = await adminApi.getDashboardStats()
       dashboardStats.value = response.data
       return { success: true }
     } catch (err) {

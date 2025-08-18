@@ -103,7 +103,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
 import { useAuthStore } from '@/stores/counter'
-import api from '@/utils/api'
+import { useApi } from '@/composables/useApi'
 // TaskReminder import has been removed
 
 const props = defineProps({
@@ -147,8 +147,8 @@ watch(() => props.task, (newTask) => {
 
 const fetchUsers = async () => {
   try {
-    const response = await api.get('/tasks/users/list')
-    users.value = response.data.data || response.data
+    const response = await tasksStore.getUsers()
+    users.value = response.data || response
   } catch (err) {
     console.error('Failed to fetch users:', err)
   }
