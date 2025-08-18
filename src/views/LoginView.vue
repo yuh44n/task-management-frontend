@@ -113,6 +113,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/utils/api'
 import { useAuthStore } from '@/stores/counter'
 
 const router = useRouter()
