@@ -14,13 +14,6 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3001,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_APP_API_URL || 'https://task-management-backend-8obs.onrender.com',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
+    port: 3001
   }
 })
