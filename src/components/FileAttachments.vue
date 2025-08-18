@@ -66,7 +66,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/counter'
-import api from '@/utils/api'
+import { useApi } from '@/composables/useApi'
 import { formatDistanceToNow } from 'date-fns'
 
 const props = defineProps({
@@ -99,11 +99,13 @@ const fetchAttachments = async () => {
   loading.value = true
   error.value = null
   try {
+    const { attachments: attachmentsApi } = useApi()
     let response
     if (props.interactionId) {
-      response = await api.get(`/interactions/${props.interactionId}/attachments`)
+      // For interaction attachments, we'll use a custom endpoint
+      response = await useApi().api.get(`/interactions/${props.interactionId}/attachments`)
     } else {
-      response = await api.get(`/tasks/${props.taskId}/attachments`)
+      response = await attachmentsApi.getForTask(props.taskId)
     }
     attachments.value = response.data.attachments || []
   } catch (err) {
@@ -153,11 +155,8 @@ const uploadFile = async () => {
   
   try {
     console.log('Sending API request to:', `/tasks/${props.taskId}/attachments`)
-    const response = await api.post(`/tasks/${props.taskId}/attachments`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+    const { attachments: attachmentsApi } = useApi()
+    const response = await attachmentsApi.upload(props.taskId, formData)
     
     console.log('Upload response:', response.data)
     console.log('Response data structure:', Object.keys(response.data))

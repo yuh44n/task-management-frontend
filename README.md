@@ -110,12 +110,24 @@ src/
 ✅ **Error Handling**: User-friendly error messages  
 ✅ **Loading States**: Visual feedback during operations  
 
-## Default Ports
+## Environment Configuration
 
+### Development
 - **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:8000
+- **Backend API**: https://task-management-backend-8obs.onrender.com
 
-Make sure your Laravel backend is running on port 8000 for the API proxy to work correctly.
+### Production
+- **Frontend**: https://task-management-frontend-tau-three.vercel.app
+- **Backend API**: https://task-management-backend-8obs.onrender.com
+
+### Environment Variables
+The application uses the following environment variables:
+
+```
+VITE_APP_API_URL=https://task-management-backend-8obs.onrender.com
+```
+
+This variable is set in both `.env` and `.env.production` files to ensure proper API routing in all environments.
 
 ## Notes
 

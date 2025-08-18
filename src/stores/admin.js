@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import api from '@/utils/api'
+import { useApi } from '@/composables/useApi'
 
 export const useAdminStore = defineStore('admin', () => {
   const users = ref([])
@@ -20,7 +20,8 @@ export const useAdminStore = defineStore('admin', () => {
     error.value = null
     
     try {
-      const response = await api.get('/admin/users')
+      const { admin: adminApi } = useApi()
+      const response = await adminApi.getUsers()
       users.value = response.data.data || response.data
       return { success: true }
     } catch (err) {
@@ -68,7 +69,8 @@ export const useAdminStore = defineStore('admin', () => {
     error.value = null
     
     try {
-      const response = await api.put(`/admin/users/${userId}/role`, { role })
+      const { admin: adminApi } = useApi()
+      const response = await adminApi.updateUserRole(userId, role)
       const index = users.value.findIndex(user => user.id === userId)
       if (index !== -1) {
         users.value[index] = response.data.data || response.data

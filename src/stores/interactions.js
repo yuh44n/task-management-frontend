@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import api from '@/utils/api'
+import { useApi } from '@/composables/useApi'
 
 export const useInteractionsStore = defineStore('interactions', () => {
   const comments = ref([])
@@ -117,7 +117,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/user/invitations/pending')
+      const { invitations: invitationsApi } = useApi()
+      const response = await invitationsApi.getPending()
       // Process invitations to ensure user property exists
       const rawInvitations = response.data.invitations || []
       invitations.value = rawInvitations.map(invitation => ({
@@ -275,7 +276,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
   const markAllAsRead = async () => {
     error.value = null
     try {
-      await api.patch('/user/notifications/mark-all-read')
+      const { notifications: notificationsApi } = useApi()
+      await notificationsApi.markAllAsRead()
       notifications.value.forEach(n => {
         if (n.status === 'unread') {
           n.status = 'read'

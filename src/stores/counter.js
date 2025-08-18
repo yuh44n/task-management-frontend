@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import api from '@/utils/api'
+import { useApi } from '@/composables/useApi'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user')) || null)
@@ -21,7 +21,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     
     try {
-      const response = await api.post('/login', credentials)
+      const { auth } = useApi()
+      const response = await auth.login(credentials)
       const { user: userData, token: userToken } = response.data
       
       user.value = userData
@@ -51,7 +52,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     
     try {
-      const response = await api.post('/register', userData)
+      const { auth } = useApi()
+      const response = await auth.register(userData)
       const { user: newUser, token: userToken } = response.data
       
       user.value = newUser
@@ -78,7 +80,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
-      await api.post('/logout')
+      const { auth } = useApi()
+      await auth.logout()
     } catch (err) {
       console.error('Logout error:', err)
     } finally {
