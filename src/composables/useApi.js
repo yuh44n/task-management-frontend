@@ -1,13 +1,22 @@
-import api from '@/utils/api'
+import api, { getCsrfToken } from '@/utils/api'
 
 export function useApi() {
   /**
    * Authentication API calls
    */
   const auth = {
-    login: (credentials) => api.post('/api/login', credentials),
-    register: (userData) => api.post('/api/register', userData),
-    logout: () => api.post('/api/logout'),
+    login: async (credentials) => {
+      await getCsrfToken() // Get CSRF token before login
+      return api.post('/api/login', credentials)
+    },
+    register: async (userData) => {
+      await getCsrfToken() // Get CSRF token before registration
+      return api.post('/api/register', userData)
+    },
+    logout: async () => {
+      await getCsrfToken() // Get CSRF token before logout
+      return api.post('/api/logout')
+    },
     getUser: () => api.get('/api/user')
   }
 

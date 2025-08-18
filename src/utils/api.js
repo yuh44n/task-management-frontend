@@ -5,8 +5,22 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
+  },
+  withCredentials: true // Enable sending cookies with cross-origin requests
 })
+
+// Function to get CSRF token
+async function getCsrfToken() {
+  try {
+    const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/sanctum/csrf-cookie`, {
+      withCredentials: true
+    })
+    return response
+  } catch (error) {
+    console.error('Error fetching CSRF token:', error)
+    return null
+  }
+}
 
 // Add token to requests if it exists
 api.interceptors.request.use(
@@ -35,4 +49,6 @@ api.interceptors.response.use(
   }
 )
 
+// Export the CSRF token function along with the API instance
+export { getCsrfToken }
 export default api
