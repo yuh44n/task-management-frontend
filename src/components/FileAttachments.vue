@@ -101,16 +101,24 @@ const fetchAttachments = async () => {
   try {
     const { attachments: attachmentsApi } = useApi()
     let response
+    
     if (props.interactionId) {
-      // For interaction attachments, we'll use a custom endpoint
-      response = await useApi().api.get(`/interactions/${props.interactionId}/attachments`)
+      // For interaction attachments, use the new helper method
+      response = await attachmentsApi.getForInteraction(props.interactionId)
     } else {
       response = await attachmentsApi.getForTask(props.taskId)
     }
-    attachments.value = response.data.attachments || []
+    
+    if (response && response.data) {
+      attachments.value = response.data.attachments || []
+    } else {
+      console.warn('Invalid response format for attachments:', response)
+      attachments.value = []
+    }
   } catch (err) {
     error.value = err.response?.data?.message || 'Failed to fetch attachments'
     console.error('Error fetching attachments:', err)
+    attachments.value = []
   } finally {
     loading.value = false
   }

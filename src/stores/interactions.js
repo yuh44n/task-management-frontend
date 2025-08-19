@@ -301,55 +301,77 @@ export const useInteractionsStore = defineStore('interactions', () => {
 
   // Mentionable users
   const getMentionableUsers = async (taskId) => {
+    if (!taskId) {
+      console.warn('No taskId provided to getMentionableUsers')
+      return []
+    }
+    
     try {
       const { api } = useApi()
-      const response = await api.get(`/tasks/${taskId}/mentionable-users`)
-      return response.data.users
-    } catch (err) {
-      console.error('Failed to get mentionable users:', err)
+      try {
+        const response = await api.get(`/tasks/${taskId}/mentionable-users`)
+        if (response.data && Array.isArray(response.data.users)) {
+          return response.data.users
+        } else {
+          console.warn('Invalid response format for mentionable users:', response.data)
+          // Continue to fallback
+        }
+      } catch (apiErr) {
+        console.error('Failed to get mentionable users from API:', apiErr)
+        // Continue to fallback
+      }
       
-      // If we get a 404 error, try to fetch users from an alternative source
-      if (err.response && err.response.status === 404) {
-        try {
-          // Try to get users from the task details as a fallback
-          const { tasks: tasksApi } = useApi()
-          const taskResponse = await tasksApi.get(taskId)
+      // Try to get users from the task details as a fallback
+      try {
+        const { tasks: tasksApi } = useApi()
+        const taskResponse = await tasksApi.get(taskId)
+        
+        if (taskResponse.data && taskResponse.data.task) {
+          const task = taskResponse.data.task
+          const users = []
           
-          if (taskResponse.data && taskResponse.data.task) {
-            const task = taskResponse.data.task
-            const users = []
-            
-            // Add creator if available
-            if (task.creator) {
-              users.push(task.creator)
-            }
-            
-            // Add assigned users if available
-            if (task.assigned_users && Array.isArray(task.assigned_users)) {
-              task.assigned_users.forEach(user => {
-                if (!users.some(u => u.id === user.id)) {
-                  users.push(user)
-                }
-              })
-            }
-            
-            // Add current user if available
+          // Add creator if available
+          if (task.creator && typeof task.creator === 'object' && task.creator.id) {
+            users.push(task.creator)
+          }
+          
+          // Add assigned users if available
+          if (task.assigned_users && Array.isArray(task.assigned_users)) {
+            task.assigned_users.forEach(user => {
+              if (user && typeof user === 'object' && user.id && !users.some(u => u.id === user.id)) {
+                users.push(user)
+              }
+            })
+          }
+          
+          // Add current user if available
+          try {
             const { auth: authApi } = useApi()
             const userResponse = await authApi.getUser()
             if (userResponse.data && userResponse.data.user) {
               const currentUser = userResponse.data.user
-              if (!users.some(u => u.id === currentUser.id)) {
+              if (currentUser && typeof currentUser === 'object' && currentUser.id && 
+                  !users.some(u => u.id === currentUser.id)) {
                 users.push(currentUser)
               }
             }
-            
-            return users
+          } catch (userErr) {
+            console.error('Failed to get current user:', userErr)
+            // Continue with the users we have
           }
-        } catch (fallbackErr) {
-          console.error('Failed to get users from fallback:', fallbackErr)
+          
+          console.log('Returning users from fallback:', users)
+          return users
         }
+      } catch (fallbackErr) {
+        console.error('Failed to get users from task details fallback:', fallbackErr)
       }
       
+      // If all attempts fail, return an empty array
+      console.warn('All attempts to get mentionable users failed, returning empty array')
+      return []
+    } catch (err) {
+      console.error('Unexpected error in getMentionableUsers:', err)
       return []
     }
   }

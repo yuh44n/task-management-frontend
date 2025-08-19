@@ -46,13 +46,50 @@ export function useApi() {
    * Task Attachments API calls
    */
   const attachments = {
-    getForTask: (taskId) => api.get(`/api/tasks/${taskId}/attachments`),
-    upload: (taskId, formData) => api.post(`/api/tasks/${taskId}/attachments`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+    getForTask: async (taskId) => {
+      try {
+        return await api.get(`/api/tasks/${taskId}/attachments`)
+      } catch (err) {
+        console.error('Error fetching task attachments with /api prefix:', err)
+        // Try without /api prefix as fallback
+        return await api.get(`/tasks/${taskId}/attachments`)
       }
-    }),
-    delete: (attachmentId) => api.delete(`/api/attachments/${attachmentId}`)
+    },
+    getForInteraction: async (interactionId) => {
+      try {
+        return await api.get(`/api/interactions/${interactionId}/attachments`)
+      } catch (err) {
+        console.error('Error fetching interaction attachments with /api prefix:', err)
+        // Try without /api prefix as fallback
+        return await api.get(`/interactions/${interactionId}/attachments`)
+      }
+    },
+    upload: async (taskId, formData) => {
+      try {
+        return await api.post(`/api/tasks/${taskId}/attachments`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+      } catch (err) {
+        console.error('Error uploading attachment with /api prefix:', err)
+        // Try without /api prefix as fallback
+        return await api.post(`/tasks/${taskId}/attachments`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+      }
+    },
+    delete: async (attachmentId) => {
+      try {
+        return await api.delete(`/api/attachments/${attachmentId}`)
+      } catch (err) {
+        console.error('Error deleting attachment with /api prefix:', err)
+        // Try without /api prefix as fallback
+        return await api.delete(`/attachments/${attachmentId}`)
+      }
+    }
   }
 
   /**

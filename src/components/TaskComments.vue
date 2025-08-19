@@ -347,13 +347,25 @@ watch(() => props.taskId, async (newTaskId) => {
 })
 
 const loadMentionableUsers = async () => {
-  console.log('Loading mentionable users for task:', props.taskId)
   try {
-    mentionableUsers.value = await interactionsStore.getMentionableUsers(props.taskId)
-    console.log('Loaded mentionable users:', mentionableUsers.value)
+    if (!props.taskId) {
+      console.warn('No taskId provided to loadMentionableUsers')
+      mentionableUsers.value = []
+      return
+    }
+    
+    console.log('Loading mentionable users for task:', props.taskId)
+    const users = await interactionsStore.getMentionableUsers(props.taskId)
+    
+    if (Array.isArray(users)) {
+      mentionableUsers.value = users
+      console.log('Loaded mentionable users:', users.length)
+    } else {
+      console.warn('getMentionableUsers did not return an array:', users)
+      mentionableUsers.value = []
+    }
   } catch (error) {
-    console.error('Error loading mentionable users:', error)
-    // Set a default empty array if there's an error
+    console.error('Failed to load mentionable users:', error)
     mentionableUsers.value = []
   }
 }
@@ -362,103 +374,149 @@ const filteredMentionableUsers = computed(() => {
   console.log('Filtering mentionable users with query:', mentionQuery.value)
   console.log('Available mentionable users:', mentionableUsers.value)
   
+  // Ensure mentionableUsers is an array
+  if (!Array.isArray(mentionableUsers.value)) {
+    console.warn('mentionableUsers is not an array in computed property')
+    return []
+  }
+  
   if (!mentionQuery.value) {
     console.log('No query, returning all users:', mentionableUsers.value)
     return mentionableUsers.value
   }
   
-  const filtered = mentionableUsers.value.filter(user =>
-    user.name.toLowerCase().includes(mentionQuery.value.toLowerCase())
-  )
-  
-  console.log('Filtered users:', filtered)
-  return filtered
+  try {
+    const filtered = mentionableUsers.value.filter(user => {
+      // Check if user object is valid and has a name property
+      if (!user || typeof user !== 'object' || !user.name) {
+        console.warn('Invalid user object in filter:', user)
+        return false
+      }
+      return user.name.toLowerCase().includes(mentionQuery.value.toLowerCase())
+    })
+    
+    console.log('Filtered users:', filtered)
+    return filtered
+  } catch (error) {
+    console.error('Error filtering mentionable users:', error)
+    return []
+  }
 })
 
 const handleMentionInput = (event) => {
-  const text = event.target.value
-  const cursorPosition = event.target.selectionStart
-  const beforeCursor = text.substring(0, cursorPosition)
-  
-  // Check if the user has typed '@' character
-  // This will match '@' followed by any word characters or just '@' by itself
-  const mentionMatch = beforeCursor.match(/(?:^|\s)@(\w*)$/)
-  
-  console.log('Input text:', text)
-  console.log('Before cursor:', beforeCursor)
-  console.log('Mention match:', mentionMatch)
-  
-  if (mentionMatch) {
-    // If we just typed '@', mentionMatch[1] will be empty string
-    mentionQuery.value = mentionMatch[1]
-    showMentionSuggestions.value = true
-    console.log('Showing mention suggestions, query:', mentionQuery.value)
-    
-    // If we don't have mentionable users yet, load them
-    if (mentionableUsers.value.length === 0) {
-      loadMentionableUsers()
+  try {
+    if (!event || !event.target) {
+      console.error('Invalid event in handleMentionInput:', event)
+      return
     }
-  } else {
-    showMentionSuggestions.value = false
-  }
-  
-  // Force a check for '@' character if it's in the text
-  if (text.includes('@') && !showMentionSuggestions.value) {
-    console.log('Text contains @ but no match found, checking again')
-    const atIndex = beforeCursor.lastIndexOf('@')
-    if (atIndex !== -1 && atIndex === cursorPosition - 1) {
-      // We just typed '@'
+    
+    const text = event.target.value || ''
+    const cursorPosition = event.target.selectionStart || 0
+    const beforeCursor = text.substring(0, cursorPosition)
+    
+    // Check if the user has typed '@' character
+    // This will match '@' followed by any word characters or just '@' by itself
+    const mentionMatch = beforeCursor.match(/(?:^|\s)@(\w*)$/)
+    
+    if (mentionMatch) {
+      // If we just typed '@', mentionMatch[1] will be empty string
+      mentionQuery.value = mentionMatch[1]
       showMentionSuggestions.value = true
-      mentionQuery.value = ''
-      console.log('Found @ at cursor position, showing suggestions')
       
       // If we don't have mentionable users yet, load them
-      if (mentionableUsers.value.length === 0) {
+      if (!mentionableUsers.value || mentionableUsers.value.length === 0) {
         loadMentionableUsers()
       }
+    } else {
+      showMentionSuggestions.value = false
     }
+    
+    // Force a check for '@' character if it's in the text
+    if (text.includes('@') && !showMentionSuggestions.value) {
+      const atIndex = beforeCursor.lastIndexOf('@')
+      if (atIndex !== -1 && atIndex === cursorPosition - 1) {
+        // We just typed '@'
+        showMentionSuggestions.value = true
+        mentionQuery.value = ''
+        
+        // If we don't have mentionable users yet, load them
+        if (!mentionableUsers.value || mentionableUsers.value.length === 0) {
+          loadMentionableUsers()
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in handleMentionInput:', error)
+    showMentionSuggestions.value = false
   }
 }
 
 const selectMention = (user) => {
-  // Get the active textarea (either new comment or reply)
-  const activeTextarea = document.activeElement
-  if (!activeTextarea || (activeTextarea.tagName !== 'TEXTAREA')) {
-    console.error('No active textarea found')
-    return
-  }
-  
-  // Determine which textarea is active and get its value
-  let text, textSetter
-  if (activeTextarea === document.querySelector('.comment-form textarea')) {
-    text = newComment.value
-    textSetter = (newValue) => { newComment.value = newValue }
-  } else if (activeTextarea === document.querySelector('.reply-form textarea')) {
-    text = replyContent.value
-    textSetter = (newValue) => { replyContent.value = newValue }
-  } else {
-    console.error('Unknown textarea')
-    return
-  }
-  
-  const cursorPosition = activeTextarea.selectionStart
-  const beforeCursor = text.substring(0, cursorPosition)
-  const afterCursor = text.substring(cursorPosition)
-  
-  const mentionMatch = beforeCursor.match(/@(\w*)$/)
-  if (mentionMatch) {
-    const newText = beforeCursor.replace(/@(\w*)$/, `@${user.name} `) + afterCursor
-    textSetter(newText)
+  try {
+    // Validate user object
+    if (!user || typeof user !== 'object') {
+      console.error('Invalid user object:', user)
+      showMentionSuggestions.value = false
+      return
+    }
     
-    // Set focus back to the textarea and place cursor after the inserted mention
-    setTimeout(() => {
-      activeTextarea.focus()
-      const newCursorPosition = beforeCursor.length - mentionMatch[0].length + `@${user.name} `.length
-      activeTextarea.setSelectionRange(newCursorPosition, newCursorPosition)
-    }, 0)
+    // Ensure user has a name property
+    if (!user.name) {
+      console.warn('User object missing name property:', user)
+      user.name = user.email || user.username || 'user'
+    }
+    
+    // Get the active textarea (either new comment or reply)
+    const activeTextarea = document.activeElement
+    if (!activeTextarea || (activeTextarea.tagName !== 'TEXTAREA')) {
+      console.error('No active textarea found')
+      showMentionSuggestions.value = false
+      return
+    }
+    
+    // Determine which textarea is active and get its value
+    let text, textSetter
+    if (activeTextarea === document.querySelector('.comment-form textarea')) {
+      text = newComment.value || ''
+      textSetter = (newValue) => { newComment.value = newValue }
+    } else if (activeTextarea === document.querySelector('.reply-form textarea')) {
+      text = replyContent.value || ''
+      textSetter = (newValue) => { replyContent.value = newValue }
+    } else {
+      console.error('Unknown textarea')
+      showMentionSuggestions.value = false
+      return
+    }
+    
+    const cursorPosition = activeTextarea.selectionStart || 0
+    const beforeCursor = text.substring(0, cursorPosition)
+    const afterCursor = text.substring(cursorPosition)
+    
+    const mentionMatch = beforeCursor.match(/@(\w*)$/)
+    if (mentionMatch) {
+      // Create a safe display name (remove any @ symbols from the user's name)
+      const safeName = user.name.replace(/@/g, '')
+      const newText = beforeCursor.replace(/@(\w*)$/, `@${safeName} `) + afterCursor
+      textSetter(newText)
+      
+      // Set focus back to the textarea and place cursor after the inserted mention
+      setTimeout(() => {
+        try {
+          activeTextarea.focus()
+          const newCursorPosition = beforeCursor.length - mentionMatch[0].length + `@${safeName} `.length
+          activeTextarea.setSelectionRange(newCursorPosition, newCursorPosition)
+        } catch (focusError) {
+          console.error('Error setting focus or cursor position:', focusError)
+        }
+      }, 0)
+    } else {
+      console.warn('No mention pattern found in text')
+    }
+  } catch (error) {
+    console.error('Error in selectMention:', error)
+  } finally {
+    showMentionSuggestions.value = false
   }
-  
-  showMentionSuggestions.value = false
 }
 
 const submitComment = async () => {
@@ -573,24 +631,41 @@ const formatDate = (date) => {
 const formatCommentText = (text) => {
   if (!text) return ''
   
-  // Convert line breaks to <br>
-  let formattedText = text.replace(/\n/g, '<br>')
-  
-  // Convert @mentions to highlighted text
-  formattedText = formattedText.replace(/@([\w\s]+)/g, (match, username) => {
-    // Find if this username exists in mentionable users
-    const mentionedUser = mentionableUsers.value.find(user => 
-      user.name.toLowerCase() === username.trim().toLowerCase()
-    )
+  try {
+    // Convert line breaks to <br>
+    let formattedText = text.replace(/\n/g, '<br>')
     
-    if (mentionedUser) {
-      return `<span class="mention">@${username}</span>`
-    } else {
-      return match // Keep as is if user not found
+    // Ensure mentionableUsers is an array
+    if (!Array.isArray(mentionableUsers.value)) {
+      console.warn('mentionableUsers is not an array in formatCommentText')
+      return formattedText
     }
-  })
-  
-  return formattedText
+    
+    // Convert @mentions to highlighted text
+    formattedText = formattedText.replace(/@([\w\s]+)/g, (match, username) => {
+      try {
+        // Find if this username exists in mentionable users
+        const mentionedUser = mentionableUsers.value.find(user => {
+          if (!user || typeof user !== 'object' || !user.name) return false
+          return user.name.toLowerCase() === username.trim().toLowerCase()
+        })
+        
+        if (mentionedUser) {
+          return `<span class="mention">@${username}</span>`
+        } else {
+          return match // Keep as is if user not found
+        }
+      } catch (innerError) {
+        console.error('Error processing mention:', innerError)
+        return match
+      }
+    })
+    
+    return formattedText
+  } catch (error) {
+    console.error('Error formatting comment text:', error)
+    return text || ''
+  }
 }
 
 // File handling helper functions
