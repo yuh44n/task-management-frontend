@@ -32,9 +32,6 @@
           <div class="user-name">{{ authStore.user?.name }}</div>
           <div class="user-role">{{ authStore.user?.role }}</div>
         </div>
-      </div>
-      
-      <div class="sidebar-actions">
         <button @click="logout" class="btn-icon" title="Logout">
           <i class="fas fa-sign-out-alt"></i>
         </button>
@@ -134,6 +131,7 @@ const logout = async () => {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
+  justify-content: space-between;
 }
 
 .user-avatar {
@@ -150,6 +148,7 @@ const logout = async () => {
 
 .user-details {
   flex: 1;
+  margin-right: 10px;
 }
 
 .user-name {
