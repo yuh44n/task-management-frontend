@@ -177,7 +177,8 @@ const taskAssignments = computed(() => {
 
 const isCollaborationTask = computed(() => {
   const task = tasksStore.tasks.find(t => t.id == props.taskId)
-  return task?.title?.startsWith('Collaboration on:') || false
+  if (!task) return false
+  return task.title && task.title.startsWith('Collaboration on:')
 })
 
 // Methods
@@ -192,6 +193,23 @@ const loadAvailableUsers = async () => {
     console.error('Failed to load available users:', error)
   }
 }
+
+// Watch for changes in taskId
+watch(() => props.taskId, async (newTaskId) => {
+  if (newTaskId) {
+    // Force refresh tasks to ensure we have the latest data
+    await tasksStore.fetchTasks()
+  }
+})
+
+// Initialize component
+onMounted(async () => {
+  if (props.taskId) {
+    await tasksStore.fetchTasks()
+    await loadAvailableUsers()
+    await interactionsStore.fetchPendingInvitations()
+  }
+})
 
 const sendInvitation = async () => {
   if (!inviteForm.value.invited_user_id) return

@@ -143,7 +143,7 @@ export const useInteractionsStore = defineStore('interactions', () => {
     error.value = null
     try {
       const { api } = useApi()
-      const response = await api.post(`/tasks/${taskId}/invitations`, invitationData)
+      const response = await api.post(`/api/tasks/${taskId}/invitations`, invitationData)
       return response.data.invitation
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to send invitation'

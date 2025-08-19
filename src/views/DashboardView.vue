@@ -388,7 +388,7 @@ const startCollaboration = async (task) => {
         
         // Create an invitation for the current user as a collaborator
         const { api } = useApi();
-        const response = await api.post(`/tasks/${taskId}/invitations`, {
+        const response = await api.post(`/api/tasks/${taskId}/invitations`, {
           invited_user_id: authStore.user.id,
           role: 'collaborator',
           message: 'Self-assigned as collaborator'

@@ -62,7 +62,7 @@ export function useApi() {
     getPending: () => api.get('/api/user/invitations/pending'),
     accept: (invitationId) => api.post(`/api/user/invitations/${invitationId}/accept`),
     decline: (invitationId) => api.post(`/api/user/invitations/${invitationId}/decline`),
-    invite: (taskId, email) => api.post(`/api/tasks/${taskId}/invite`, { email })
+    invite: (taskId, invitationData) => api.post(`/api/tasks/${taskId}/invitations`, invitationData)
   }
 
   /**
