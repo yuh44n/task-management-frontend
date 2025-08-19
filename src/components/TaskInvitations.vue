@@ -2,7 +2,7 @@
   <div class="task-invitations">
     <div class="invitations-header">
       <h3>Collaboration</h3>
-      <button @click="showInviteForm = true" class="btn btn-sm">
+      <button v-if="!isCollaborationTask" @click="showInviteForm = true" class="btn btn-sm">
         <i class="fas fa-user-plus"></i> Invite User
       </button>
     </div>

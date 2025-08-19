@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 // Make sure we have a valid API URL, fallback to a default if not defined
-const API_URL = import.meta.env.VITE_APP_API_URL || 'https://task-management-backend-8obs.onrender.com'
+const API_URL = import.meta.env.VITE_APP_API_URL || 'https://task-management-backend-8pbs.onrender.com'
 
 const api = axios.create({
   baseURL: API_URL,

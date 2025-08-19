@@ -114,7 +114,7 @@ src/
 
 ### Development
 - **Frontend**: http://localhost:3001
-- **Backend API**: https://task-management-backend-8obs.onrender.com
+- **Backend API**: https://task-management-backend-8pbs.onrender.com
 
 ### Production
 - **Frontend**: https://task-management-frontend-tau-three.vercel.app
@@ -124,7 +124,7 @@ src/
 The application uses the following environment variables:
 
 ```
-VITE_APP_API_URL=https://task-management-backend-8obs.onrender.com
+VITE_APP_API_URL=https://task-management-backend-8pbs.onrender.com
 ```
 
 This variable is set in both `.env` and `.env.production` files to ensure proper API routing in all environments.

@@ -32,9 +32,11 @@
           <div class="user-name">{{ authStore.user?.name }}</div>
           <div class="user-role">{{ authStore.user?.role }}</div>
         </div>
-        <button @click="logout" class="logout-btn-sidebar" title="Logout">
+      </div>
+      
+      <div class="sidebar-actions">
+        <button @click="logout" class="btn-icon" title="Logout">
           <i class="fas fa-sign-out-alt"></i>
-          Logout
         </button>
       </div>
     </div>
@@ -179,26 +181,6 @@ const logout = async () => {
 }
 
 .btn-icon:hover {
-  background: #34495e;
-  color: white;
-}
-
-.logout-btn-sidebar {
-  background: none;
-  border: none;
-  color: #bdc3c7;
-  padding: 6px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-left: auto;
-  font-size: 12px;
-}
-
-.logout-btn-sidebar:hover {
   background: #34495e;
   color: white;
 }
