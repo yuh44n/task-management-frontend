@@ -12,10 +12,6 @@
           </div>
           <span>{{ authStore.user?.name }}</span>
           <NotificationsPanel />
-          <button class="logout-btn" @click="handleLogout">
-            <i class="fas fa-sign-out-alt"></i>
-            Logout
-          </button>
         </div>
       </div>
       
