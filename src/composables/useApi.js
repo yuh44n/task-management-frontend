@@ -60,8 +60,8 @@ export function useApi() {
    */
   const invitations = {
     getPending: () => api.get('/api/user/invitations/pending'),
-    accept: (invitationId) => api.post(`/api/user/invitations/${invitationId}/accept`),
-    decline: (invitationId) => api.post(`/api/user/invitations/${invitationId}/decline`),
+    accept: (invitationId) => api.post(`/api/interactions/${invitationId}/accept`),
+    decline: (invitationId) => api.post(`/api/interactions/${invitationId}/decline`),
     invite: (taskId, invitationData) => api.post(`/api/tasks/${taskId}/invitations`, invitationData)
   }
 
@@ -71,7 +71,7 @@ export function useApi() {
   const notifications = {
     getAll: () => api.get('/api/user/notifications'),
     getUnreadCount: () => api.get('/api/user/notifications/unread-count'),
-    markAsRead: (notificationId) => api.patch(`/api/user/notifications/${notificationId}/read`),
+    markAsRead: (notificationId) => api.patch(`/api/interactions/${notificationId}/read`),
     markAllAsRead: () => api.patch('/api/user/notifications/mark-all-read')
   }
 
