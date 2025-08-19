@@ -162,41 +162,32 @@ export const useInteractionsStore = defineStore('interactions', () => {
       console.log('Invitation exists:', invitationExists)
       
       const { invitations: invitationsApi } = useApi()
-      console.log('Making API call to accept invitation:', `/api/interactions/${interactionId}/accept`)
-      try {
-        const response = await invitationsApi.accept(interactionId)
-        console.log('Invitation acceptance API response:', response.data)
-        
-        // Remove from pending invitations list if it exists there
-        const index = invitations.value.findIndex(i => i.id === interactionId)
-        if (index !== -1) {
-          console.log('Removing invitation from invitations list')
-          invitations.value.splice(index, 1)
-        }
-        
-        // Also remove from notifications list if it exists there
-        // First try by direct ID match
-        let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
-        if (notificationIndex !== -1) {
-          console.log('Removing notification by direct ID match')
-          notifications.value.splice(notificationIndex, 1)
-        } else {
-          // Then try by invitation_id in metadata
-          notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
-          if (notificationIndex !== -1) {
-            console.log('Removing notification by invitation_id in metadata')
-            notifications.value.splice(notificationIndex, 1)
-          }
-        }
-        
-        return response.data.invitation
-      } catch (apiErr) {
-        console.error('API Error accepting invitation:', apiErr)
-        console.error('Response data:', apiErr.response?.data)
-        console.error('Status code:', apiErr.response?.status)
-        console.error('Status text:', apiErr.response?.statusText)
-        throw apiErr
+      const response = await invitationsApi.accept(interactionId)
+      console.log('Invitation acceptance API response:', response.data)
+      
+      // Remove from pending invitations list if it exists there
+      const index = invitations.value.findIndex(i => i.id === interactionId)
+      if (index !== -1) {
+        console.log('Removing invitation from invitations list')
+        invitations.value.splice(index, 1)
       }
+      
+      // Also remove from notifications list if it exists there
+      // First try by direct ID match
+      let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
+      if (notificationIndex !== -1) {
+        console.log('Removing notification by direct ID match')
+        notifications.value.splice(notificationIndex, 1)
+      } else {
+        // Then try by invitation_id in metadata
+        notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
+        if (notificationIndex !== -1) {
+          console.log('Removing notification by invitation_id in metadata')
+          notifications.value.splice(notificationIndex, 1)
+        }
+      }
+      
+      return response.data.invitation
     } catch (err) {
       console.error('Error accepting invitation:', err.response?.data || err)
       error.value = err.response?.data?.message || 'Failed to accept invitation'
@@ -215,41 +206,32 @@ export const useInteractionsStore = defineStore('interactions', () => {
       console.log('Invitation exists:', invitationExists)
       
       const { invitations: invitationsApi } = useApi()
-      console.log('Making API call to decline invitation:', `/api/interactions/${interactionId}/decline`)
-      try {
-        const response = await invitationsApi.decline(interactionId)
-        console.log('Invitation decline API response:', response.data)
-        
-        // Remove from pending invitations list if it exists there
-        const index = invitations.value.findIndex(i => i.id === interactionId)
-        if (index !== -1) {
-          console.log('Removing invitation from invitations list')
-          invitations.value.splice(index, 1)
-        }
-        
-        // Also remove from notifications list if it exists there
-        // First try by direct ID match
-        let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
-        if (notificationIndex !== -1) {
-          console.log('Removing notification by direct ID match')
-          notifications.value.splice(notificationIndex, 1)
-        } else {
-          // Then try by invitation_id in metadata
-          notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
-          if (notificationIndex !== -1) {
-            console.log('Removing notification by invitation_id in metadata')
-            notifications.value.splice(notificationIndex, 1)
-          }
-        }
-        
-        return response.data.invitation
-      } catch (apiErr) {
-        console.error('API Error declining invitation:', apiErr)
-        console.error('Response data:', apiErr.response?.data)
-        console.error('Status code:', apiErr.response?.status)
-        console.error('Status text:', apiErr.response?.statusText)
-        throw apiErr
+      const response = await invitationsApi.decline(interactionId)
+      console.log('Invitation decline API response:', response.data)
+      
+      // Remove from pending invitations list if it exists there
+      const index = invitations.value.findIndex(i => i.id === interactionId)
+      if (index !== -1) {
+        console.log('Removing invitation from invitations list')
+        invitations.value.splice(index, 1)
       }
+      
+      // Also remove from notifications list if it exists there
+      // First try by direct ID match
+      let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
+      if (notificationIndex !== -1) {
+        console.log('Removing notification by direct ID match')
+        notifications.value.splice(notificationIndex, 1)
+      } else {
+        // Then try by invitation_id in metadata
+        notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
+        if (notificationIndex !== -1) {
+          console.log('Removing notification by invitation_id in metadata')
+          notifications.value.splice(notificationIndex, 1)
+        }
+      }
+      
+      return response.data.invitation
     } catch (err) {
       console.error('Error declining invitation:', err.response?.data || err)
       error.value = err.response?.data?.message || 'Failed to decline invitation'
@@ -325,6 +307,49 @@ export const useInteractionsStore = defineStore('interactions', () => {
       return response.data.users
     } catch (err) {
       console.error('Failed to get mentionable users:', err)
+      
+      // If we get a 404 error, try to fetch users from an alternative source
+      if (err.response && err.response.status === 404) {
+        try {
+          // Try to get users from the task details as a fallback
+          const { tasks: tasksApi } = useApi()
+          const taskResponse = await tasksApi.get(taskId)
+          
+          if (taskResponse.data && taskResponse.data.task) {
+            const task = taskResponse.data.task
+            const users = []
+            
+            // Add creator if available
+            if (task.creator) {
+              users.push(task.creator)
+            }
+            
+            // Add assigned users if available
+            if (task.assigned_users && Array.isArray(task.assigned_users)) {
+              task.assigned_users.forEach(user => {
+                if (!users.some(u => u.id === user.id)) {
+                  users.push(user)
+                }
+              })
+            }
+            
+            // Add current user if available
+            const { auth: authApi } = useApi()
+            const userResponse = await authApi.getUser()
+            if (userResponse.data && userResponse.data.user) {
+              const currentUser = userResponse.data.user
+              if (!users.some(u => u.id === currentUser.id)) {
+                users.push(currentUser)
+              }
+            }
+            
+            return users
+          }
+        } catch (fallbackErr) {
+          console.error('Failed to get users from fallback:', fallbackErr)
+        }
+      }
+      
       return []
     }
   }

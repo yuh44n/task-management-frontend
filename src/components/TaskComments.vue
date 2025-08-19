@@ -348,8 +348,14 @@ watch(() => props.taskId, async (newTaskId) => {
 
 const loadMentionableUsers = async () => {
   console.log('Loading mentionable users for task:', props.taskId)
-  mentionableUsers.value = await interactionsStore.getMentionableUsers(props.taskId)
-  console.log('Loaded mentionable users:', mentionableUsers.value)
+  try {
+    mentionableUsers.value = await interactionsStore.getMentionableUsers(props.taskId)
+    console.log('Loaded mentionable users:', mentionableUsers.value)
+  } catch (error) {
+    console.error('Error loading mentionable users:', error)
+    // Set a default empty array if there's an error
+    mentionableUsers.value = []
+  }
 }
 
 const filteredMentionableUsers = computed(() => {
