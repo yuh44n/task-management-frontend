@@ -162,32 +162,41 @@ export const useInteractionsStore = defineStore('interactions', () => {
       console.log('Invitation exists:', invitationExists)
       
       const { invitations: invitationsApi } = useApi()
-      const response = await invitationsApi.accept(interactionId)
-      console.log('Invitation acceptance API response:', response.data)
-      
-      // Remove from pending invitations list if it exists there
-      const index = invitations.value.findIndex(i => i.id === interactionId)
-      if (index !== -1) {
-        console.log('Removing invitation from invitations list')
-        invitations.value.splice(index, 1)
-      }
-      
-      // Also remove from notifications list if it exists there
-      // First try by direct ID match
-      let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
-      if (notificationIndex !== -1) {
-        console.log('Removing notification by direct ID match')
-        notifications.value.splice(notificationIndex, 1)
-      } else {
-        // Then try by invitation_id in metadata
-        notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
-        if (notificationIndex !== -1) {
-          console.log('Removing notification by invitation_id in metadata')
-          notifications.value.splice(notificationIndex, 1)
+      console.log('Making API call to accept invitation:', `/api/interactions/${interactionId}/accept`)
+      try {
+        const response = await invitationsApi.accept(interactionId)
+        console.log('Invitation acceptance API response:', response.data)
+        
+        // Remove from pending invitations list if it exists there
+        const index = invitations.value.findIndex(i => i.id === interactionId)
+        if (index !== -1) {
+          console.log('Removing invitation from invitations list')
+          invitations.value.splice(index, 1)
         }
+        
+        // Also remove from notifications list if it exists there
+        // First try by direct ID match
+        let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
+        if (notificationIndex !== -1) {
+          console.log('Removing notification by direct ID match')
+          notifications.value.splice(notificationIndex, 1)
+        } else {
+          // Then try by invitation_id in metadata
+          notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
+          if (notificationIndex !== -1) {
+            console.log('Removing notification by invitation_id in metadata')
+            notifications.value.splice(notificationIndex, 1)
+          }
+        }
+        
+        return response.data.invitation
+      } catch (apiErr) {
+        console.error('API Error accepting invitation:', apiErr)
+        console.error('Response data:', apiErr.response?.data)
+        console.error('Status code:', apiErr.response?.status)
+        console.error('Status text:', apiErr.response?.statusText)
+        throw apiErr
       }
-      
-      return response.data.invitation
     } catch (err) {
       console.error('Error accepting invitation:', err.response?.data || err)
       error.value = err.response?.data?.message || 'Failed to accept invitation'
@@ -206,32 +215,41 @@ export const useInteractionsStore = defineStore('interactions', () => {
       console.log('Invitation exists:', invitationExists)
       
       const { invitations: invitationsApi } = useApi()
-      const response = await invitationsApi.decline(interactionId)
-      console.log('Invitation decline API response:', response.data)
-      
-      // Remove from pending invitations list if it exists there
-      const index = invitations.value.findIndex(i => i.id === interactionId)
-      if (index !== -1) {
-        console.log('Removing invitation from invitations list')
-        invitations.value.splice(index, 1)
-      }
-      
-      // Also remove from notifications list if it exists there
-      // First try by direct ID match
-      let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
-      if (notificationIndex !== -1) {
-        console.log('Removing notification by direct ID match')
-        notifications.value.splice(notificationIndex, 1)
-      } else {
-        // Then try by invitation_id in metadata
-        notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
-        if (notificationIndex !== -1) {
-          console.log('Removing notification by invitation_id in metadata')
-          notifications.value.splice(notificationIndex, 1)
+      console.log('Making API call to decline invitation:', `/api/interactions/${interactionId}/decline`)
+      try {
+        const response = await invitationsApi.decline(interactionId)
+        console.log('Invitation decline API response:', response.data)
+        
+        // Remove from pending invitations list if it exists there
+        const index = invitations.value.findIndex(i => i.id === interactionId)
+        if (index !== -1) {
+          console.log('Removing invitation from invitations list')
+          invitations.value.splice(index, 1)
         }
+        
+        // Also remove from notifications list if it exists there
+        // First try by direct ID match
+        let notificationIndex = notifications.value.findIndex(n => n.id === interactionId)
+        if (notificationIndex !== -1) {
+          console.log('Removing notification by direct ID match')
+          notifications.value.splice(notificationIndex, 1)
+        } else {
+          // Then try by invitation_id in metadata
+          notificationIndex = notifications.value.findIndex(n => n.metadata?.invitation_id === interactionId)
+          if (notificationIndex !== -1) {
+            console.log('Removing notification by invitation_id in metadata')
+            notifications.value.splice(notificationIndex, 1)
+          }
+        }
+        
+        return response.data.invitation
+      } catch (apiErr) {
+        console.error('API Error declining invitation:', apiErr)
+        console.error('Response data:', apiErr.response?.data)
+        console.error('Status code:', apiErr.response?.status)
+        console.error('Status text:', apiErr.response?.statusText)
+        throw apiErr
       }
-      
-      return response.data.invitation
     } catch (err) {
       console.error('Error declining invitation:', err.response?.data || err)
       error.value = err.response?.data?.message || 'Failed to decline invitation'
