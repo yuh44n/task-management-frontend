@@ -112,13 +112,7 @@ src/
 
 ## Environment Configuration
 
-### Development
-- **Frontend**: http://localhost:3001
-- **Backend API**: https://task-management-backend-8pbs.onrender.com
 
-### Production
-- **Frontend**: https://task-management-frontend-tau-three.vercel.app
-- **Backend API**: https://task-management-backend-8pbs.onrender.com
 
 ### Environment Variables
 The application uses the following environment variables:
