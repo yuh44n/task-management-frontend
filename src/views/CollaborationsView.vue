@@ -181,6 +181,26 @@
             </div>
           </div>
 
+          <!-- Current Collaborators -->
+          <div class="collaborators-section">
+            <h4>Current Collaborators</h4>
+            <div class="collaborators-list">
+              <div 
+                v-for="user in selectedTask.assigned_users" 
+                :key="user.id || Math.random()"
+                class="collaborator-item"
+              >
+                <div class="user-avatar-small">
+                  {{ getUserInitials(user.name || 'Unknown') }}
+                </div>
+                <div class="collaborator-info">
+                  <div class="user-name">{{ user.name || 'Unknown User' }}</div>
+                  <div class="user-role">{{ user.pivot?.role || 'Collaborator' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Task Attachments -->
           <div v-if="selectedTask && selectedTask.id" class="task-attachments">
             <h5>Attachments</h5>
@@ -452,7 +472,7 @@ const formatDate = (date) => {
 
 const getUserInitials = (name) => {
   if (!name) return 'U'
-  return name.split(' ').map(n => n[0]).join('').toUpperCase()
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
 }
 </script>
 
@@ -915,6 +935,65 @@ const getUserInitials = (name) => {
 .task-description-full {
   line-height: 1.6;
   color: #333;
+}
+
+/* Collaborators section styles */
+.collaborators-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.collaborators-section h4 {
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.collaborators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.collaborator-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #6366f1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-right: 12px;
+}
+
+.collaborator-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.user-role {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 2px;
 }
 
 .btn {

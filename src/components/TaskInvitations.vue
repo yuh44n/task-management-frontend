@@ -114,7 +114,7 @@
       <div class="collaborators-list">
         <div
           v-for="assignment in taskAssignments"
-          :key="assignment.id"
+          :key="assignment.id || Math.random()"
           class="collaborator-item"
         >
           <div class="user-info">
@@ -123,7 +123,7 @@
             </div>
             <div>
               <div class="user-name">{{ assignment.user?.name || 'Unknown User' }}</div>
-              <div class="role-badge">{{ assignment.role }}</div>
+              <div class="role-badge">{{ assignment.role || assignment.pivot?.role || 'Collaborator' }}</div>
             </div>
           </div>
         </div>
@@ -180,15 +180,29 @@ const taskAssignments = computed(() => {
     return []
   }
   
+  console.log('Task assigned_users:', task.assigned_users)
+  
   // Ensure each assignment has a valid user property
   return task.assigned_users.map(assignment => {
-    // Check if assignment is valid
+    // If assignment is null or undefined, create a placeholder
     if (!assignment) {
       console.warn('Invalid assignment in task.assigned_users')
       return {
-        id: Math.random().toString(), // Generate a temporary ID
+        id: Math.random().toString(),
         role: 'unknown',
         user: { name: 'Unknown User', id: 0 }
+      }
+    }
+    
+    // If assignment is directly a user object (no pivot/role info)
+    if (assignment.name && !assignment.user) {
+      return {
+        id: assignment.id || Math.random().toString(),
+        role: 'Collaborator',
+        user: { 
+          name: assignment.name, 
+          id: assignment.id || 0 
+        }
       }
     }
     
@@ -218,6 +232,13 @@ const taskAssignments = computed(() => {
     
     return assignment
   })
+})
+
+// Debug computed property to check what's happening with collaborators
+const debugCollaborators = computed(() => {
+  const assignments = taskAssignments.value
+  console.log('Current collaborators:', assignments)
+  return assignments
 })
 
 const isCollaborationTask = computed(() => {
@@ -436,7 +457,9 @@ watch(() => props.taskId, async (newTaskId) => {
 }
 
 .invitation-list {
-  space-y: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .invitation-item {
@@ -524,7 +547,10 @@ watch(() => props.taskId, async (newTaskId) => {
 }
 
 .collaborators-list {
-  space-y: 10px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .collaborator-item {
@@ -538,6 +564,9 @@ watch(() => props.taskId, async (newTaskId) => {
 
 .collaborator-item .user-info {
   margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 /* No Collaborators */

@@ -879,7 +879,9 @@ const formatFileSize = (bytes) => {
 }
 
 .comments-list {
-  space-y: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .comment-item {
