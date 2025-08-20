@@ -450,8 +450,15 @@ const closeTaskDetails = () => {
 }
 
 const editTask = (task) => {
-  selectedTask.value = task
+  // Create a deep copy of the task to avoid reference issues
+  const taskCopy = JSON.parse(JSON.stringify(task))
+  selectedTask.value = taskCopy
   showEditTaskModal.value = true
+  
+  // Close the task details modal if it's open
+  if (showTaskDetails.value) {
+    showTaskDetails.value = false
+  }
 }
 
 const handleTaskUpdated = async () => {
