@@ -165,6 +165,12 @@ export const useInteractionsStore = defineStore('interactions', () => {
       const response = await invitationsApi.accept(interactionId)
       console.log('Invitation acceptance API response:', response.data)
       
+      // Process the returned invitation to ensure it has a user property
+      const processedInvitation = {
+        ...response.data.invitation,
+        user: response.data.invitation.user || { name: 'Unknown User', id: 0 }
+      }
+      
       // Remove from pending invitations list if it exists there
       const index = invitations.value.findIndex(i => i.id === interactionId)
       if (index !== -1) {
@@ -187,7 +193,7 @@ export const useInteractionsStore = defineStore('interactions', () => {
         }
       }
       
-      return response.data.invitation
+      return processedInvitation
     } catch (err) {
       console.error('Error accepting invitation:', err.response?.data || err)
       error.value = err.response?.data?.message || 'Failed to accept invitation'
@@ -209,6 +215,12 @@ export const useInteractionsStore = defineStore('interactions', () => {
       const response = await invitationsApi.decline(interactionId)
       console.log('Invitation decline API response:', response.data)
       
+      // Process the returned invitation to ensure it has a user property
+      const processedInvitation = {
+        ...response.data.invitation,
+        user: response.data.invitation.user || { name: 'Unknown User', id: 0 }
+      }
+      
       // Remove from pending invitations list if it exists there
       const index = invitations.value.findIndex(i => i.id === interactionId)
       if (index !== -1) {
@@ -231,7 +243,7 @@ export const useInteractionsStore = defineStore('interactions', () => {
         }
       }
       
-      return response.data.invitation
+      return processedInvitation
     } catch (err) {
       console.error('Error declining invitation:', err.response?.data || err)
       error.value = err.response?.data?.message || 'Failed to decline invitation'
@@ -278,11 +290,18 @@ export const useInteractionsStore = defineStore('interactions', () => {
       const { notifications: notificationsApi } = useApi()
       const response = await notificationsApi.markAsRead(interactionId)
       const updatedNotification = response.data.notification
+      
+      // Ensure user property exists
+      const processedNotification = {
+        ...updatedNotification,
+        user: updatedNotification.user || { name: 'Unknown User', id: 0 }
+      }
+      
       const index = notifications.value.findIndex(n => n.id === interactionId)
       if (index !== -1) {
-        notifications.value[index] = updatedNotification
+        notifications.value[index] = processedNotification
       }
-      return updatedNotification
+      return processedNotification
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to mark notification as read'
       throw err
@@ -297,6 +316,10 @@ export const useInteractionsStore = defineStore('interactions', () => {
       notifications.value.forEach(n => {
         if (n.status === 'unread') {
           n.status = 'read'
+        }
+        // Ensure user property exists
+        if (!n.user) {
+          n.user = { name: 'Unknown User', id: 0 }
         }
       })
     } catch (err) {
