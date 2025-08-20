@@ -469,6 +469,8 @@ const startCollaboration = async (task) => {
     console.error('Error creating collaboration:', error);
     alert('An error occurred while creating the collaboration');
   }
+}
+
 const openTaskDetails = (task) => {
   selectedTask.value = task
   showTaskModal.value = true
