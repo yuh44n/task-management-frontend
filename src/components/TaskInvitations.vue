@@ -172,7 +172,52 @@ const pendingInvitations = computed(() => {
 
 const taskAssignments = computed(() => {
   const task = tasksStore.tasks.find(t => t.id == props.taskId)
-  return task?.assigned_users || []
+  if (!task) return []
+  
+  // Handle case where assigned_users might be null or undefined
+  if (!task.assigned_users) {
+    console.warn('Task has no assigned_users property:', task)
+    return []
+  }
+  
+  // Ensure each assignment has a valid user property
+  return task.assigned_users.map(assignment => {
+    // Check if assignment is valid
+    if (!assignment) {
+      console.warn('Invalid assignment in task.assigned_users')
+      return {
+        id: Math.random().toString(), // Generate a temporary ID
+        role: 'unknown',
+        user: { name: 'Unknown User', id: 0 }
+      }
+    }
+    
+    // Check if user property exists and is valid
+    if (!assignment.user || typeof assignment.user !== 'object') {
+      console.warn('Assignment missing or invalid user property:', assignment)
+      return {
+        ...assignment,
+        user: { 
+          name: 'Unknown User', 
+          id: assignment.user_id || assignment.pivot?.user_id || 0 
+        }
+      }
+    }
+    
+    // Check if user has a name property
+    if (!assignment.user.name) {
+      console.warn('User missing name property:', assignment.user)
+      return {
+        ...assignment,
+        user: { 
+          ...assignment.user,
+          name: 'Unknown User'
+        }
+      }
+    }
+    
+    return assignment
+  })
 })
 
 const isCollaborationTask = computed(() => {
