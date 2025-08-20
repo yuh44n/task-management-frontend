@@ -308,6 +308,21 @@ export const useInteractionsStore = defineStore('interactions', () => {
     
     try {
       const { api } = useApi()
+      // Try with /api prefix first
+      try {
+        const response = await api.get(`/api/tasks/${taskId}/mentionable-users`)
+        if (response.data && Array.isArray(response.data.users)) {
+          return response.data.users
+        } else {
+          console.warn('Invalid response format for mentionable users:', response.data)
+          // Continue to next attempt
+        }
+      } catch (apiPrefixErr) {
+        console.error('Failed to get mentionable users with /api prefix:', apiPrefixErr)
+        // Try without /api prefix as fallback
+      }
+      
+      // Try without /api prefix
       try {
         const response = await api.get(`/tasks/${taskId}/mentionable-users`)
         if (response.data && Array.isArray(response.data.users)) {
