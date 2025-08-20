@@ -410,6 +410,9 @@ const handleMentionInput = (event) => {
       return
     }
     
+    // Store a reference to the active textarea
+    activeTextareaRef.value = event.target
+    
     const text = event.target.value || ''
     const cursorPosition = event.target.selectionStart || 0
     const beforeCursor = text.substring(0, cursorPosition)
@@ -451,6 +454,9 @@ const handleMentionInput = (event) => {
   }
 }
 
+// Track the active textarea element
+const activeTextareaRef = ref(null)
+
 const selectMention = (user) => {
   try {
     // Validate user object
@@ -466,8 +472,8 @@ const selectMention = (user) => {
       user.name = user.email || user.username || 'user'
     }
     
-    // Get the active textarea (either new comment or reply)
-    const activeTextarea = document.activeElement
+    // Use the stored reference to the active textarea
+    const activeTextarea = activeTextareaRef.value
     if (!activeTextarea || (activeTextarea.tagName !== 'TEXTAREA')) {
       console.error('No active textarea found')
       showMentionSuggestions.value = false
