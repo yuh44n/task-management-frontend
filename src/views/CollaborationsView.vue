@@ -54,6 +54,15 @@
               >
                 <i class="fas fa-eye"></i>
               </button>
+              <button 
+                v-if="canEditTask(task)"
+                @click.prevent.stop="editTask(task)" 
+                class="btn-icon" 
+                title="Edit Task"
+                :data-task-id="task.id"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
             </div>
           </div>
 
@@ -122,7 +131,7 @@
             </div>
           </div>
 
-          <!-- View Full Details Button -->
+          <!-- Task Action Buttons -->
           <div class="task-footer">
             <button 
               @click.prevent.stop="openTaskDetails(task)" 
@@ -130,6 +139,14 @@
               :data-task-id="task.id"
             >
               <i class="fas fa-comments"></i> View Full Details
+            </button>
+            <button 
+              v-if="canEditTask(task)"
+              @click.prevent.stop="editTask(task)" 
+              class="btn"
+              :data-task-id="task.id"
+            >
+              <i class="fas fa-edit"></i> Edit Task
             </button>
           </div>
         </div>
