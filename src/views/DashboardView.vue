@@ -106,10 +106,40 @@
             v-for="task in tasksStore.tasks" 
             :key="task.id"
             class="task-card"
-            style="cursor: pointer;"
           >
-            <!-- Task Header with Checkbox and Collab Button -->            <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 12px;" @click="openTaskDetails(task)">              <button                @click.stop="toggleTaskStatus(task)"                :disabled="taskUpdating === task.id"                class="task-checkbox flex-shrink-0"                :class="{ 'completed': task.status === 'completed' }"                style="margin-top: 3px;"                title="Mark as completed"              >                <i v-if="taskUpdating === task.id" class="fas fa-spinner fa-spin" style="font-size: 14px;"></i>                <i v-else-if="task.status === 'completed'" class="fas fa-check" style="font-size: 14px;"></i>              </button>              
-              <div class="flex-1">                <div class="task-title-row">                  <div class="task-title" :class="{ 'line-through text-gray-500': task.status === 'completed' }">                    {{ task.title }}                  </div>                  <button                    v-if="!task.title.startsWith('Collaboration on:')"                    @click.stop="startCollaboration(task)"                    class="collab-btn"                    title="Start Collaboration"                  >                    <i class="fas fa-user-friends"></i>                  </button>                </div>                <div class="task-description" :class="{ 'line-through text-gray-400': task.status === 'completed' }">                  {{ task.description }}                </div>              </div>            </div>
+            <!-- Task Header with Checkbox and Collab Button -->
+            <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 12px;">
+              <button
+                @click.stop="toggleTaskStatus(task)"
+                :disabled="taskUpdating === task.id"
+                class="task-checkbox flex-shrink-0"
+                :class="{ 'completed': task.status === 'completed' }"
+                style="margin-top: 3px;"
+                title="Mark as completed"
+              >
+                <i v-if="taskUpdating === task.id" class="fas fa-spinner fa-spin" style="font-size: 14px;"></i>
+                <i v-else-if="task.status === 'completed'" class="fas fa-check" style="font-size: 14px;"></i>
+              </button>
+              
+              <div class="flex-1" @click="openTaskDetails(task)" style="cursor: pointer;">
+                <div class="task-title-row">
+                  <div class="task-title" :class="{ 'line-through text-gray-500': task.status === 'completed' }">
+                    {{ task.title }}
+                  </div>
+                  <button
+                    v-if="!task.title.startsWith('Collaboration on:')"
+                    @click.stop="startCollaboration(task)"
+                    class="collab-btn"
+                    title="Start Collaboration"
+                  >
+                    <i class="fas fa-user-friends"></i>
+                  </button>
+                </div>
+                <div class="task-description" :class="{ 'line-through text-gray-400': task.status === 'completed' }">
+                  {{ task.description }}
+                </div>
+              </div>
+            </div>
             
             <div class="task-meta">
               <span class="task-status" :class="task.status">
@@ -181,7 +211,7 @@
     />
 
         <!-- Task Details Modal -->
-        <div v-if="selectedTask" class="modal-overlay" @click="closeTaskModal">
+        <div v-if="selectedTask && showTaskModal" class="modal-overlay" @click="closeTaskModal">
           <div class="modal-content task-details-modal" @click.stop>
             <div class="modal-header">
               <h3>Task Details</h3>
@@ -274,6 +304,7 @@ const tasksStore = useTasksStore()
 
 const showAddTaskModal = ref(false)
 const showEditTaskModal = ref(false)
+const showTaskModal = ref(false)
 const selectedTask = ref(null)
 const taskUpdating = ref(null)
 
@@ -365,6 +396,7 @@ const getUserInitials = (name) => {
 
 const closeTaskModal = () => {
   selectedTask.value = null
+  showTaskModal.value = false
 }
 
 const startCollaboration = async (task) => {
@@ -437,11 +469,11 @@ const startCollaboration = async (task) => {
     console.error('Error creating collaboration:', error);
     alert('An error occurred while creating the collaboration');
   }
-}
-
 const openTaskDetails = (task) => {
   selectedTask.value = task
+  showTaskModal.value = true
 }
+
 
 onMounted(() => {
   tasksStore.fetchTasks()
