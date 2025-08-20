@@ -252,7 +252,6 @@ const handleNotificationClick = async (notification) => {
     // The notification contains the invitation_id in its metadata
     const invitationId = notification.metadata?.invitation_id || notification.id
     console.log('Processing invitation with ID:', invitationId)
-    console.log('Full notification data:', notification)
     
     // Confirm with the user if they want to accept the invitation
     if (confirm('Do you want to accept this invitation to collaborate on the task?')) {

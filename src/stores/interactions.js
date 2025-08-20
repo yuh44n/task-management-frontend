@@ -246,7 +246,13 @@ export const useInteractionsStore = defineStore('interactions', () => {
     try {
       const { notifications: notificationsApi } = useApi()
       const response = await notificationsApi.getAll()
-      notifications.value = response.data.notifications.data || response.data.notifications
+      const rawNotifications = response.data.notifications.data || response.data.notifications
+      
+      // Process notifications to ensure user property exists
+      notifications.value = rawNotifications.map(notification => ({
+        ...notification,
+        user: notification.user || { name: 'Unknown User', id: 0 }
+      }))
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
       throw err
