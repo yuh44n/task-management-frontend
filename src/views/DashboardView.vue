@@ -299,10 +299,18 @@ const handleTaskCreated = () => {
   tasksStore.fetchTasks()
 }
 
-const handleTaskUpdated = () => {
+const handleTaskUpdated = async () => {
   showEditTaskModal.value = false
-  selectedTask.value = null
-  tasksStore.fetchTasks()
+  // Don't set selectedTask to null, instead refresh the tasks and update the selected task
+  await tasksStore.fetchTasks()
+  
+  // If we have a selectedTask, refresh its data from the updated tasks list
+  if (selectedTask.value && selectedTask.value.id) {
+    const updatedTask = tasksStore.tasks.find(task => task.id === selectedTask.value.id)
+    if (updatedTask) {
+      selectedTask.value = updatedTask
+    }
+  }
 }
 
 const editTask = (task) => {

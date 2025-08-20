@@ -440,6 +440,14 @@ const editTask = (task) => {
 const handleTaskUpdated = async () => {
   showEditTaskModal.value = false
   await tasksStore.fetchTasks()
+  
+  // If we have a selectedTask, refresh its data from the updated tasks list
+  if (selectedTask.value && selectedTask.value.id) {
+    const updatedTask = tasksStore.tasks.find(task => task.id === selectedTask.value.id)
+    if (updatedTask) {
+      selectedTask.value = updatedTask
+    }
+  }
 }
 
 const canEditTask = (task) => {
