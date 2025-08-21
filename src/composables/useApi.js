@@ -75,14 +75,19 @@ export function useApi() {
       }
     },
     upload: async (taskId, formData) => {
-      // Get CSRF token before upload
+      // Get CSRF token before upload - ensure fresh token
       await getCsrfToken()
       
       try {
-        return await api.post(`/api/tasks/${taskId}/attachments`, formData, {
+        // Add a timestamp to prevent caching issues
+        const timestamp = new Date().getTime()
+        return await api.post(`/api/tasks/${taskId}/attachments?_=${timestamp}`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          },
+          withCredentials: true
         })
       } catch (err) {
         console.error('Error uploading attachment with /api prefix:', err)
@@ -111,10 +116,15 @@ export function useApi() {
         
         try {
           // Try without /api prefix as fallback
-          return await api.post(`/tasks/${taskId}/attachments`, formData, {
+          // Add a timestamp to prevent caching issues
+          const timestamp = new Date().getTime()
+          return await api.post(`/tasks/${taskId}/attachments?_=${timestamp}`, formData, {
             headers: {
-              'Content-Type': 'multipart/form-data'
-            }
+              'Content-Type': 'multipart/form-data',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            withCredentials: true
           })
         } catch (fallbackErr) {
           console.error('Error uploading attachment with fallback route:', fallbackErr)
