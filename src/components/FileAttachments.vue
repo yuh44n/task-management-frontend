@@ -195,7 +195,32 @@ const uploadFile = async () => {
   } catch (err) {
     console.error('Error uploading file:', err)
     console.error('Error response:', err.response?.data)
-    error.value = err.response?.data?.message || 'Failed to upload file'
+    
+    // Provide more specific error messages based on the error type
+    if (err.message && err.message.includes('server')) {
+      // This is a custom error message from our API wrapper
+      error.value = err.message
+    } else if (err.response) {
+      // Server responded with an error status
+      if (err.response.status === 500) {
+        error.value = 'The server encountered an internal error. This might be due to permission issues or server configuration. Please try again later.'
+      } else if (err.response.status === 413) {
+        error.value = 'The file is too large to upload.'
+      } else if (err.response.status === 422) {
+        // Validation error
+        error.value = err.response.data?.message || 'The file type or size is not allowed.'
+      } else if (err.response.status === 401) {
+        error.value = 'You need to be logged in to upload files. Please refresh the page and try again.'
+      } else {
+        error.value = err.response.data?.message || 'Failed to upload file'
+      }
+    } else if (err.request) {
+      // Request was made but no response received (network error)
+      error.value = 'Network error: Unable to connect to the server. Please check your internet connection.'
+    } else {
+      // Something else happened while setting up the request
+      error.value = err.message || 'Failed to upload file'
+    }
   } finally {
     uploading.value = false
     console.log('Upload process completed')
