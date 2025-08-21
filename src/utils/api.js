@@ -15,36 +15,13 @@ const api = axios.create({
 // Function to get CSRF token
 async function getCsrfToken() {
   try {
-    // Add a timestamp to prevent caching issues
-    const timestamp = new Date().getTime();
-    const response = await axios.get(`${API_URL}/sanctum/csrf-cookie?_=${timestamp}`, {
-      withCredentials: true,
-      headers: {
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
+    const response = await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
+      withCredentials: true
     })
     return response
   } catch (error) {
     console.error('Error fetching CSRF token:', error)
-    // Try again with a slight delay in case of network issues
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const timestamp = new Date().getTime();
-      const retryResponse = await axios.get(`${API_URL}/sanctum/csrf-cookie?_=${timestamp}`, {
-        withCredentials: true,
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      })
-      return retryResponse
-    } catch (retryError) {
-      console.error('Error on retry fetching CSRF token:', retryError)
-      return null
-    }
+    return null
   }
 }
 

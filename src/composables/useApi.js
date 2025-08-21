@@ -47,122 +47,45 @@ export function useApi() {
    */
   const attachments = {
     getForTask: async (taskId) => {
-      // Get CSRF token before fetching attachments
-      await getCsrfToken()
-      
       try {
         return await api.get(`/api/tasks/${taskId}/attachments`)
       } catch (err) {
         console.error('Error fetching task attachments with /api prefix:', err)
-        // Get CSRF token again before trying the non-API route
-        await getCsrfToken()
         // Try without /api prefix as fallback
         return await api.get(`/tasks/${taskId}/attachments`)
       }
     },
     getForInteraction: async (interactionId) => {
-      // Get CSRF token before fetching attachments
-      await getCsrfToken()
-      
       try {
         return await api.get(`/api/interactions/${interactionId}/attachments`)
       } catch (err) {
         console.error('Error fetching interaction attachments with /api prefix:', err)
-        // Get CSRF token again before trying the non-API route
-        await getCsrfToken()
         // Try without /api prefix as fallback
         return await api.get(`/interactions/${interactionId}/attachments`)
       }
     },
     upload: async (taskId, formData) => {
-      // Get CSRF token before upload - ensure fresh token
-      await getCsrfToken()
-      
       try {
-        // Add a timestamp to prevent caching issues
-        const timestamp = new Date().getTime()
-        return await api.post(`/api/tasks/${taskId}/attachments?_=${timestamp}`, formData, {
+        return await api.post(`/api/tasks/${taskId}/attachments`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-          },
-          withCredentials: true
+            'Content-Type': 'multipart/form-data'
+          }
         })
       } catch (err) {
         console.error('Error uploading attachment with /api prefix:', err)
-        
-        // Provide more detailed error messages based on the error type
-        if (err.response) {
-          // Server responded with an error status
-          if (err.response.status === 500) {
-            throw new Error('The server encountered an internal error. This might be due to permission issues or server configuration. Please try again later or contact support if the issue persists.')
-          } else if (err.response.status === 413) {
-            throw new Error('The file is too large to upload. Please reduce the file size and try again.')
-          } else if (err.response.status === 422) {
-            // Validation error
-            const message = err.response.data?.message || 'The file type or size is not allowed.'
-            throw new Error(message)
-          } else if (err.response.status === 401) {
-            throw new Error('Authentication error: You need to be logged in to upload files. Please refresh the page and try again.')
+        // Try without /api prefix as fallback
+        return await api.post(`/tasks/${taskId}/attachments`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
           }
-        } else if (err.request) {
-          // Request was made but no response received (network error)
-          throw new Error('Network error: Unable to connect to the server. Please check your internet connection and try again.')
-        }
-        
-        // Get CSRF token again before trying the non-API route
-        await getCsrfToken()
-        
-        try {
-          // Try without /api prefix as fallback
-          // Add a timestamp to prevent caching issues
-          const timestamp = new Date().getTime()
-          return await api.post(`/tasks/${taskId}/attachments?_=${timestamp}`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'X-Requested-With': 'XMLHttpRequest',
-              'Accept': 'application/json'
-            },
-            withCredentials: true
-          })
-        } catch (fallbackErr) {
-          console.error('Error uploading attachment with fallback route:', fallbackErr)
-          
-          // Provide consistent error handling for the fallback route
-          if (fallbackErr.response) {
-            // Server responded with an error status
-            if (fallbackErr.response.status === 500) {
-              throw new Error('The server is currently experiencing technical difficulties. This might be due to permission issues or server configuration. Please try again later.')
-            } else if (fallbackErr.response.status === 413) {
-              throw new Error('The file is too large to upload. Please reduce the file size and try again.')
-            } else if (fallbackErr.response.status === 422) {
-              // Validation error
-              const message = fallbackErr.response.data?.message || 'The file type or size is not allowed.'
-              throw new Error(message)
-            } else if (fallbackErr.response.status === 401) {
-              throw new Error('Authentication error: You need to be logged in to upload files. Please refresh the page and try again.')
-            }
-          } else if (fallbackErr.request) {
-            // Request was made but no response received (network error)
-            throw new Error('Network error: Unable to connect to the server. Please check your internet connection and try again.')
-          }
-          
-          // For any other errors
-          throw new Error(fallbackErr.message || 'An unexpected error occurred during file upload. Please try again.')
-        }
+        })
       }
     },
     delete: async (attachmentId) => {
-      // Get CSRF token before deletion
-      await getCsrfToken()
-      
       try {
         return await api.delete(`/api/attachments/${attachmentId}`)
       } catch (err) {
         console.error('Error deleting attachment with /api prefix:', err)
-        // Get CSRF token again before trying the non-API route
-        await getCsrfToken()
         // Try without /api prefix as fallback
         return await api.delete(`/attachments/${attachmentId}`)
       }
