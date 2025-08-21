@@ -21,7 +21,17 @@ async function getCsrfToken() {
     return response
   } catch (error) {
     console.error('Error fetching CSRF token:', error)
-    return null
+    // Try again with a slight delay in case of network issues
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      const retryResponse = await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
+        withCredentials: true
+      })
+      return retryResponse
+    } catch (retryError) {
+      console.error('Error on retry fetching CSRF token:', retryError)
+      return null
+    }
   }
 }
 

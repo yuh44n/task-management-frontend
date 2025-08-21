@@ -47,24 +47,37 @@ export function useApi() {
    */
   const attachments = {
     getForTask: async (taskId) => {
+      // Get CSRF token before fetching attachments
+      await getCsrfToken()
+      
       try {
         return await api.get(`/api/tasks/${taskId}/attachments`)
       } catch (err) {
         console.error('Error fetching task attachments with /api prefix:', err)
+        // Get CSRF token again before trying the non-API route
+        await getCsrfToken()
         // Try without /api prefix as fallback
         return await api.get(`/tasks/${taskId}/attachments`)
       }
     },
     getForInteraction: async (interactionId) => {
+      // Get CSRF token before fetching attachments
+      await getCsrfToken()
+      
       try {
         return await api.get(`/api/interactions/${interactionId}/attachments`)
       } catch (err) {
         console.error('Error fetching interaction attachments with /api prefix:', err)
+        // Get CSRF token again before trying the non-API route
+        await getCsrfToken()
         // Try without /api prefix as fallback
         return await api.get(`/interactions/${interactionId}/attachments`)
       }
     },
     upload: async (taskId, formData) => {
+      // Get CSRF token before upload
+      await getCsrfToken()
+      
       try {
         return await api.post(`/api/tasks/${taskId}/attachments`, formData, {
           headers: {
@@ -73,6 +86,8 @@ export function useApi() {
         })
       } catch (err) {
         console.error('Error uploading attachment with /api prefix:', err)
+        // Get CSRF token again before trying the non-API route
+        await getCsrfToken()
         // Try without /api prefix as fallback
         return await api.post(`/tasks/${taskId}/attachments`, formData, {
           headers: {
@@ -82,10 +97,15 @@ export function useApi() {
       }
     },
     delete: async (attachmentId) => {
+      // Get CSRF token before deletion
+      await getCsrfToken()
+      
       try {
         return await api.delete(`/api/attachments/${attachmentId}`)
       } catch (err) {
         console.error('Error deleting attachment with /api prefix:', err)
+        // Get CSRF token again before trying the non-API route
+        await getCsrfToken()
         // Try without /api prefix as fallback
         return await api.delete(`/attachments/${attachmentId}`)
       }
