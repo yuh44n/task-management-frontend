@@ -207,7 +207,8 @@ const deleteAttachment = async (attachmentId) => {
   if (!confirm('Are you sure you want to delete this attachment?')) return
   
   try {
-    await api.delete(`/attachments/${attachmentId}`)
+    const { attachments: attachmentsApi } = useApi()
+    await attachmentsApi.delete(attachmentId)
     
     // Remove the attachment from the list
     attachments.value = attachments.value.filter(a => a.id !== attachmentId)
