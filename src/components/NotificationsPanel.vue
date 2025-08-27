@@ -217,8 +217,8 @@ const loadNotifications = async () => {
   try {
     await interactionsStore.fetchNotifications()
   } catch (error) {
-    // Use toast notification instead of console.error
-    toast.error('Failed to load notifications. Please try again.')
+    // Use console.error instead of toast
+    console.error('Failed to load notifications. Please try again.')
   }
 }
 
@@ -226,8 +226,8 @@ const markAsRead = async (notificationId) => {
   try {
     await interactionsStore.markAsRead(notificationId)
   } catch (error) {
-    // Use toast notification instead of console.error
-    toast.error('Failed to mark notification as read. Please try again.')
+    // Use console.error instead of toast
+    console.error('Failed to mark notification as read. Please try again.')
   }
 }
 
@@ -235,8 +235,8 @@ const markAllAsRead = async () => {
   try {
     await interactionsStore.markAllAsRead()
   } catch (error) {
-    // Use toast notification instead of console.error
-    toast.error('Failed to mark all notifications as read. Please try again.')
+    // Use console.error instead of toast
+    console.error('Failed to mark all notifications as read. Please try again.')
   }
 }
 
@@ -259,22 +259,22 @@ const handleNotificationClick = async (notification) => {
     if (confirm('Do you want to accept this invitation to collaborate on the task?')) {
       try {
         const result = await interactionsStore.acceptInvitation(invitationId)
-        toast.success('Invitation accepted successfully!')
+        console.log('Invitation accepted successfully!')
         // Refresh tasks to show new assignment with force refresh to clear cache
         await tasksStore.fetchTasks(true)
         // Navigate to collaborations page
         router.push('/collaborations')
       } catch (error) {
-        toast.error('Failed to accept invitation. Please try again.')
+        console.error('Failed to accept invitation. Please try again.')
         // Still navigate to the task
         router.push(`/dashboard?task=${notification.task_id}`)
       }
     } else if (confirm('Do you want to decline this invitation?')) {
       try {
         await interactionsStore.declineInvitation(invitationId)
-        toast.success('Invitation declined.')
+        console.log('Invitation declined.')
       } catch (error) {
-        toast.error('Failed to decline invitation. Please try again.')
+        console.error('Failed to decline invitation. Please try again.')
       }
     } else {
       // Just navigate to the task without accepting/declining

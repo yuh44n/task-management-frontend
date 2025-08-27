@@ -143,7 +143,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useInteractionsStore } from '@/stores/interactions'
 import { useTasksStore } from '@/stores/tasks'
 import { useAuthStore } from '@/stores/counter'
-import { toast } from '@/composables/useToast'
 
 const props = defineProps({
   taskId: {
@@ -257,7 +256,7 @@ const loadAvailableUsers = async () => {
       !taskAssignments.value.some(assignment => assignment.user_id === user.id)
     )
   } catch (error) {
-    toast.error('Failed to load available users')
+    console.error('Failed to load available users')
   }
 }
 
@@ -288,7 +287,7 @@ const sendInvitation = async () => {
     // Refresh pending invitations with force refresh
     await interactionsStore.fetchPendingInvitations(true)
   } catch (error) {
-    // Error handling is now done in the store with toast notifications
+    // Error handling is now done in the store with console.error
   } finally {
     sending.value = false
   }
@@ -300,7 +299,7 @@ const acceptInvitation = async (invitationId) => {
     // Refresh tasks to show new assignment
     await tasksStore.fetchTasks()
   } catch (error) {
-    // Error handling is now done in the store with toast notifications
+    // Error handling is now done in the store with console.error
   }
 }
 
@@ -308,7 +307,7 @@ const declineInvitation = async (invitationId) => {
   try {
     await interactionsStore.declineInvitation(invitationId)
   } catch (error) {
-    // Error handling is now done in the store with toast notifications
+    // Error handling is now done in the store with console.error
   }
 }
 
@@ -340,7 +339,7 @@ onMounted(async () => {
     await loadAvailableUsers()
     await interactionsStore.fetchPendingInvitations(true) // Force refresh on initial load
   } catch (error) {
-    // Error handling is now done in the store with toast notifications
+    // Error handling is now done in the store with console.error
   }
 })
 
@@ -350,7 +349,7 @@ watch(() => props.taskId, async (newTaskId) => {
       await loadAvailableUsers()
       await interactionsStore.fetchPendingInvitations(true) // Force refresh when task changes
     } catch (error) {
-      // Error handling is now done in the store with toast notifications
+      // Error handling is now done in the store with console.error
     }
   }
 })

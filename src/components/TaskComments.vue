@@ -295,7 +295,6 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useInteractionsStore } from '@/stores/interactions'
 import { useAuthStore } from '@/stores/counter'
 import FileAttachments from '@/components/FileAttachments.vue'
-import { toast } from '@/composables/useToast'
 
 const props = defineProps({
   taskId: {
@@ -352,7 +351,7 @@ const loadMentionableUsers = async (forceRefresh = false) => {
     }
   } catch (error) {
     mentionableUsers.value = []
-    toast.error('Failed to load mentionable users: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to load mentionable users: ' + (error.response?.data?.message || 'Unknown error'))
   }
 }
 
@@ -496,9 +495,9 @@ const submitComment = async () => {
     })
     newComment.value = ''
     // No need to refresh comments as the store handles optimistic updates
-    toast.success('Comment added successfully')
+    console.log('Comment added successfully')
   } catch (error) {
-    toast.error('Failed to add comment: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to add comment: ' + (error.response?.data?.message || 'Unknown error'))
   } finally {
     submitting.value = false
   }
@@ -521,9 +520,9 @@ const submitReply = async (parentId) => {
     }
     
     // No need to refresh comments as the store handles optimistic updates
-    toast.success('Reply added successfully')
+    console.log('Reply added successfully')
   } catch (error) {
-    toast.error('Failed to add reply: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to add reply: ' + (error.response?.data?.message || 'Unknown error'))
   }
 }
 
@@ -541,9 +540,9 @@ const saveEdit = async () => {
     })
     editingComment.value = null
     // No need to refresh comments as the store handles optimistic updates
-    toast.success('Comment updated successfully')
+    console.log('Comment updated successfully')
   } catch (error) {
-    toast.error('Failed to update comment: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to update comment: ' + (error.response?.data?.message || 'Unknown error'))
   }
 }
 
@@ -571,9 +570,9 @@ const deleteComment = async (commentId) => {
   try {
     // Use the optimized deleteComment method with optimistic UI updates
     await interactionsStore.deleteComment(commentId)
-    toast.success('Comment deleted successfully')
+    console.log('Comment deleted successfully')
   } catch (error) {
-    toast.error('Failed to delete comment: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to delete comment: ' + (error.response?.data?.message || 'Unknown error'))
   }
 }
 

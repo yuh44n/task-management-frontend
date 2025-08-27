@@ -291,7 +291,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/counter'
 import { useTasksStore } from '@/stores/tasks'
 import { useApi } from '@/composables/useApi'
-import { toast } from '@/composables/useToast'
 import Sidebar from '@/components/Sidebar.vue'
 import TaskModal from '@/components/TaskModal.vue'
 import TaskComments from '@/components/TaskComments.vue'
@@ -339,10 +338,10 @@ const handleTaskUpdated = async () => {
       const result = await tasksStore.fetchTaskById(selectedTask.value.id, true) // Force refresh
       if (result.success && result.task) {
         selectedTask.value = result.task
-        toast.success('Task updated successfully')
+        console.log('Task updated successfully')
       }
     } catch (error) {
-      toast.error('Error refreshing task details: ' + (error.response?.data?.message || 'Unknown error'))
+      console.error('Error refreshing task details: ' + (error.response?.data?.message || 'Unknown error'))
     }
   }
 }
@@ -369,9 +368,9 @@ const toggleTaskStatus = async (task) => {
   try {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed'
     await tasksStore.updateTask(task.id, { status: newStatus })
-    toast.success(`Task marked as ${newStatus}`)
+    console.log(`Task marked as ${newStatus}`)
   } catch (err) {
-    toast.error('Failed to update task status: ' + (err.response?.data?.message || 'Unknown error'))
+    console.error('Failed to update task status: ' + (err.response?.data?.message || 'Unknown error'))
   } finally {
     taskUpdating.value = null
   }
@@ -386,7 +385,7 @@ const applyFilters = async () => {
   try {
     await tasksStore.fetchTasks(activeFilters, true) // Force refresh
   } catch (error) {
-    toast.error('Error applying filters: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Error applying filters: ' + (error.response?.data?.message || 'Unknown error'))
   }
 }
 
@@ -448,7 +447,7 @@ const startCollaboration = async (task) => {
           await invitationsApi.accept(interactionId);
         }
       } catch (err) {
-        toast.error('Error creating collaborator assignment: ' + (err.response?.data?.message || err.message || 'Unknown error'));
+        console.error('Error creating collaborator assignment: ' + (err.response?.data?.message || err.message || 'Unknown error'));
         // Continue with the process even if this part fails
       }
       
@@ -460,12 +459,12 @@ const startCollaboration = async (task) => {
       
       // Navigate to collaborations page
       router.push('/collaborations');
-      toast.success('Collaboration created successfully');
+      console.log('Collaboration created successfully');
     } else {
-      toast.error('Failed to create collaboration: ' + result.error);
+      console.error('Failed to create collaboration: ' + result.error);
     }
   } catch (error) {
-    toast.error('Error creating collaboration: ' + (error.response?.data?.message || 'Unknown error'));
+    console.error('Error creating collaboration: ' + (error.response?.data?.message || 'Unknown error'));
   }
 }
 
@@ -479,7 +478,7 @@ onMounted(async () => {
   try {
     await tasksStore.fetchTasks({}, true) // Force refresh on initial load
   } catch (error) {
-    toast.error('Error loading tasks: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Error loading tasks: ' + (error.response?.data?.message || 'Unknown error'))
   }
 })
 </script>

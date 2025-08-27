@@ -68,7 +68,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/counter'
 import { useApi } from '@/composables/useApi'
 import { formatDistanceToNow } from 'date-fns'
-import { toast } from '@/composables/useToast'
 
 const props = defineProps({
   taskId: {
@@ -122,7 +121,7 @@ const fetchAttachments = async (forceRefresh = false) => {
   } catch (err) {
     const errorMessage = err.response?.data?.message || 'Failed to fetch attachments'
     error.value = errorMessage
-    toast.error(errorMessage)
+    console.error(errorMessage)
     console.error('Error fetching attachments:', err)
     // Keep existing attachments if there's an error
     if (attachments.value.length === 0) {
@@ -194,13 +193,13 @@ const uploadFile = async () => {
         attachments.value.unshift(response.data.attachment)
       }
       emit('file-uploaded', response.data.attachment)
-      toast.success('File uploaded successfully')
+      console.log('File uploaded successfully')
     } else {
       // Remove the temporary attachment and fetch all attachments
       attachments.value = attachments.value.filter(a => a.id !== tempAttachment.id)
       await fetchAttachments(true)
       emit('file-uploaded', null)
-      toast.success('File uploaded successfully')
+      console.log('File uploaded successfully')
     }
     
     // Reset file input
@@ -211,7 +210,7 @@ const uploadFile = async () => {
     attachments.value = attachments.value.filter(a => a.id !== tempAttachment.id)
     const errorMessage = err.response?.data?.message || 'Failed to upload file'
     error.value = errorMessage
-    toast.error(errorMessage)
+    console.error(errorMessage)
     console.error('Error uploading file:', err)
   } finally {
     uploading.value = false
@@ -248,13 +247,13 @@ const deleteAttachment = async (attachmentId) => {
     
     // Already removed from UI, no need to filter again
     error.value = null
-    toast.success('File deleted successfully')
+    console.log('File deleted successfully')
   } catch (err) {
     // Restore the attachment if deletion failed
     attachments.value.splice(attachmentIndex, 0, removedAttachment)
     const errorMessage = err.response?.data?.message || 'Failed to delete attachment'
     error.value = errorMessage
-    toast.error(errorMessage)
+    console.error(errorMessage)
     console.error('Error deleting attachment:', err)
   }
 }

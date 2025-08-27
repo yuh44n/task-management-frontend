@@ -276,16 +276,16 @@ export const useInteractionsStore = defineStore('interactions', () => {
       // Force refresh pending invitations to get the latest data
       await fetchPendingInvitations(true)
       
-      // Show success toast
-      toast.success('Invitation sent successfully')
+      // Show success message
+      console.log('Invitation sent successfully')
       
       return response.data.invitation
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Failed to send invitation'
       error.value = errorMessage
       
-      // Show error toast
-      toast.error(errorMessage)
+      // Show error message
+      console.error(errorMessage)
       
       throw err
     } finally {
@@ -328,8 +328,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
         }
       }
       
-      // Show success toast
-      toast.success('Invitation accepted successfully')
+      // Show success message
+      console.log('Invitation accepted successfully')
       
       return processedInvitation
     } catch (err) {
@@ -339,8 +339,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
       // Rollback to original state on error
       invitations.value = originalInvitations
       
-      // Show error toast
-      toast.error(errorMessage)
+      // Show error message
+      console.error(errorMessage)
       
       throw err
     } finally {
@@ -387,8 +387,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
         }
       }
       
-      // Show success toast
-      toast.success('Invitation declined')
+      // Show success message
+      console.log('Invitation declined')
       
       return processedInvitation
     } catch (err) {
@@ -398,8 +398,8 @@ export const useInteractionsStore = defineStore('interactions', () => {
       // Rollback to original state on error
       invitations.value = originalInvitations
       
-      // Show error toast
-      toast.error(errorMessage)
+      // Show error message
+      console.error(errorMessage)
       
       throw err
     } finally {

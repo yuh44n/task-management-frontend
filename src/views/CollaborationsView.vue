@@ -265,7 +265,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
 import { useAuthStore } from '@/stores/counter'
-import { toast } from '@/composables/useToast'
 import TaskComments from '@/components/TaskComments.vue'
 import TaskInvitations from '@/components/TaskInvitations.vue'
 import TaskModal from '@/components/TaskModal.vue'
@@ -320,9 +319,9 @@ onMounted(async () => {
   loading.value = true
   try {
     await tasksStore.fetchTasks({}, true) // Force refresh on initial load
-    toast.success('Collaborations loaded successfully')
+    console.log('Collaborations loaded successfully')
   } catch (error) {
-    toast.error('Failed to fetch collaborations: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to fetch collaborations: ' + (error.response?.data?.message || 'Unknown error'))
   } finally {
     loading.value = false
   }
@@ -332,7 +331,7 @@ onMounted(async () => {
 const openTaskDetails = async (task) => {
   // Make sure we have a valid task object with an ID
   if (!task || !task.id) {
-    toast.error('Invalid task object')
+    console.error('Invalid task object')
     return
   }
   
@@ -388,7 +387,7 @@ const openTaskDetails = async (task) => {
       selectedTask.value = taskCopy
     }
   } catch (error) {
-    toast.error('Error fetching task details: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Error fetching task details: ' + (error.response?.data?.message || 'Unknown error'))
     // Fallback to using the provided task with safety checks
     const taskCopy = JSON.parse(JSON.stringify(task))
     
@@ -443,10 +442,10 @@ const handleTaskUpdated = async () => {
     const updatedTask = tasksStore.tasks.find(task => task.id === selectedTask.value.id)
     if (updatedTask) {
       selectedTask.value = updatedTask
-      toast.success('Task updated successfully')
+      console.log('Task updated successfully')
     }
   } else {
-    toast.success('Task updated successfully')
+    console.log('Task updated successfully')
   }
 }
 
