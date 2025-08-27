@@ -68,6 +68,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/counter'
 import { useApi } from '@/composables/useApi'
 import { formatDistanceToNow } from 'date-fns'
+import { toast } from '@/composables/useToast'
 
 const props = defineProps({
   taskId: {
@@ -91,11 +92,11 @@ const error = ref(null)
 
 // Load attachments when component is mounted
 onMounted(() => {
-  fetchAttachments()
+  // Force refresh on initial load to ensure we have the latest data
+  fetchAttachments(true)
 })
 
-// Fetch attachments for task or interaction
-const fetchAttachments = async () => {
+const fetchAttachments = async (forceRefresh = false) => {
   loading.value = true
   error.value = null
   try {
@@ -103,51 +104,58 @@ const fetchAttachments = async () => {
     let response
     
     if (props.interactionId) {
-      // For interaction attachments, use the new helper method
-      response = await attachmentsApi.getForInteraction(props.interactionId)
+      response = await attachmentsApi.getForInteraction(props.interactionId, forceRefresh)
     } else {
-      response = await attachmentsApi.getForTask(props.taskId)
+      response = await attachmentsApi.getForTask(props.taskId, forceRefresh)
     }
     
     if (response && response.data) {
-      attachments.value = response.data.attachments || []
+      if (Array.isArray(response.data.attachments)) {
+        attachments.value = response.data.attachments
+      } else {
+        console.error('Invalid attachments data format')
+        attachments.value = []
+      }
     } else {
-      console.warn('Invalid response format for attachments:', response)
       attachments.value = []
     }
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to fetch attachments'
+    const errorMessage = err.response?.data?.message || 'Failed to fetch attachments'
+    error.value = errorMessage
+    toast.error(errorMessage)
     console.error('Error fetching attachments:', err)
-    attachments.value = []
+    // Keep existing attachments if there's an error
+    if (attachments.value.length === 0) {
+      attachments.value = []
+    }
   } finally {
     loading.value = false
   }
 }
 
-// Handle file selection
 const handleFileSelect = (event) => {
-  // Clear any previous errors
   error.value = null
   
   const file = event.target.files[0]
   if (file) {
-    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type)
     selectedFile.value = file
   } else {
-    console.log('No file selected')
     selectedFile.value = null
   }
 }
 
-// Upload file
 const uploadFile = async () => {
-  console.log('Upload file function called')
   if (!selectedFile.value) {
-    console.log('No file selected')
     return
   }
   
-  console.log('Selected file:', selectedFile.value)
+  // Validate file size before uploading
+  const maxSizeInBytes = 10 * 1024 * 1024 // 10MB
+  if (selectedFile.value.size > maxSizeInBytes) {
+    error.value = `File size exceeds the maximum limit of ${formatFileSize(maxSizeInBytes)}`
+    return
+  }
+  
   uploading.value = true
   error.value = null
   
@@ -155,75 +163,106 @@ const uploadFile = async () => {
   formData.append('file', selectedFile.value)
   if (props.interactionId) {
     formData.append('interaction_id', props.interactionId)
-    console.log('Added interaction_id to form data:', props.interactionId)
   }
   
-  console.log('Task ID for upload:', props.taskId)
-  console.log('Form data prepared:', formData)
+  // Create a temporary attachment for optimistic UI update
+  const tempAttachment = {
+    id: 'temp-' + Date.now(),
+    filename: selectedFile.value.name,
+    mime_type: selectedFile.value.type,
+    size: selectedFile.value.size,
+    uploaded_by: { id: authStore.user.id, name: authStore.user.name },
+    uploaded_at: new Date().toISOString(),
+    url: '#',
+    isUploading: true
+  }
+  
+  // Add temporary attachment to the UI
+  attachments.value.unshift(tempAttachment)
   
   try {
-    console.log('Sending API request to:', `/tasks/${props.taskId}/attachments`)
     const { attachments: attachmentsApi } = useApi()
     const response = await attachmentsApi.upload(props.taskId, formData)
     
-    console.log('Upload response:', response.data)
-    console.log('Response data structure:', Object.keys(response.data))
-    console.log('Current attachments before update:', attachments.value)
-    
-    // Add the new attachment to the list
     if (response.data.attachment) {
-      console.log('Attachment data found:', response.data.attachment)
-      attachments.value.unshift(response.data.attachment)
-      console.log('Added attachment to list, current attachments:', attachments.value)
+      // Replace the temporary attachment with the real one
+      const tempIndex = attachments.value.findIndex(a => a.id === tempAttachment.id)
+      if (tempIndex !== -1) {
+        attachments.value.splice(tempIndex, 1, response.data.attachment)
+      } else {
+        // If for some reason the temp attachment is not found, add the new one
+        attachments.value.unshift(response.data.attachment)
+      }
+      emit('file-uploaded', response.data.attachment)
+      toast.success('File uploaded successfully')
     } else {
-      console.log('No attachment data in response')
-      // Refresh attachments list to ensure we have the latest data
-      await fetchAttachments()
+      // Remove the temporary attachment and fetch all attachments
+      attachments.value = attachments.value.filter(a => a.id !== tempAttachment.id)
+      await fetchAttachments(true)
+      emit('file-uploaded', null)
+      toast.success('File uploaded successfully')
     }
     
-    // Emit event to notify parent component that a file was uploaded
-    emit('file-uploaded', response.data.attachment)
-    
-    // Refresh the attachments list to ensure we have the latest data
-    // This is important for when files are uploaded without an interactionId
-    await fetchAttachments()
-    
-    // Reset the file input
+    // Reset file input
     selectedFile.value = null
     document.getElementById('file-upload').value = ''
-    console.log('File input reset')
   } catch (err) {
+    // Remove the temporary attachment on error
+    attachments.value = attachments.value.filter(a => a.id !== tempAttachment.id)
+    const errorMessage = err.response?.data?.message || 'Failed to upload file'
+    error.value = errorMessage
+    toast.error(errorMessage)
     console.error('Error uploading file:', err)
-    console.error('Error response:', err.response?.data)
-    error.value = err.response?.data?.message || 'Failed to upload file'
   } finally {
     uploading.value = false
-    console.log('Upload process completed')
   }
 }
 
-// Delete attachment
 const deleteAttachment = async (attachmentId) => {
   if (!confirm('Are you sure you want to delete this attachment?')) return
+  
+  // Find the attachment to delete
+  const attachmentToDelete = attachments.value.find(a => a.id === attachmentId)
+  if (!attachmentToDelete) {
+    error.value = 'Attachment not found'
+    return
+  }
+  
+  // Store original state for potential rollback
+  const attachmentIndex = attachments.value.findIndex(a => a.id === attachmentId)
+  const removedAttachment = { ...attachmentToDelete }
+  
+  // Optimistically remove from UI first for better UX
+  attachments.value.splice(attachmentIndex, 1)
   
   try {
     const { attachments: attachmentsApi } = useApi()
     await attachmentsApi.delete(attachmentId)
     
-    // Remove the attachment from the list
-    attachments.value = attachments.value.filter(a => a.id !== attachmentId)
+    // Clear the cache to ensure fresh data on next fetch
+    if (props.interactionId) {
+      attachmentsApi.clearCache(null, props.interactionId)
+    } else {
+      attachmentsApi.clearCache(props.taskId)
+    }
+    
+    // Already removed from UI, no need to filter again
+    error.value = null
+    toast.success('File deleted successfully')
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to delete attachment'
+    // Restore the attachment if deletion failed
+    attachments.value.splice(attachmentIndex, 0, removedAttachment)
+    const errorMessage = err.response?.data?.message || 'Failed to delete attachment'
+    error.value = errorMessage
+    toast.error(errorMessage)
     console.error('Error deleting attachment:', err)
   }
 }
 
-// Check if current user can delete an attachment
 const canDelete = (attachment) => {
   return attachment.uploaded_by.id === authStore.user.id
 }
 
-// Format file size
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes'
   
@@ -234,13 +273,11 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-// Format date
 const formatDate = (date) => {
   if (!date) return ''
   return formatDistanceToNow(new Date(date), { addSuffix: true })
 }
 
-// Get appropriate icon for file type
 const getFileIcon = (mimeType) => {
   if (!mimeType) return 'fas fa-file'
   

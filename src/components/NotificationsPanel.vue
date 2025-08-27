@@ -217,7 +217,8 @@ const loadNotifications = async () => {
   try {
     await interactionsStore.fetchNotifications()
   } catch (error) {
-    console.error('Failed to load notifications:', error)
+    // Use toast notification instead of console.error
+    toast.error('Failed to load notifications. Please try again.')
   }
 }
 
@@ -225,7 +226,8 @@ const markAsRead = async (notificationId) => {
   try {
     await interactionsStore.markAsRead(notificationId)
   } catch (error) {
-    console.error('Failed to mark notification as read:', error)
+    // Use toast notification instead of console.error
+    toast.error('Failed to mark notification as read. Please try again.')
   }
 }
 
@@ -233,7 +235,8 @@ const markAllAsRead = async () => {
   try {
     await interactionsStore.markAllAsRead()
   } catch (error) {
-    console.error('Failed to mark all notifications as read:', error)
+    // Use toast notification instead of console.error
+    toast.error('Failed to mark all notifications as read. Please try again.')
   }
 }
 
@@ -251,34 +254,27 @@ const handleNotificationClick = async (notification) => {
     // Get the correct invitation ID from the metadata
     // The notification contains the invitation_id in its metadata
     const invitationId = notification.metadata?.invitation_id || notification.id
-    console.log('Processing invitation with ID:', invitationId)
     
     // Confirm with the user if they want to accept the invitation
     if (confirm('Do you want to accept this invitation to collaborate on the task?')) {
       try {
-        console.log('Accepting invitation with ID:', invitationId)
         const result = await interactionsStore.acceptInvitation(invitationId)
-        console.log('Invitation acceptance result:', result)
-        alert('Invitation accepted successfully!')
-        // Refresh tasks to show new assignment
-        await tasksStore.fetchTasks()
+        toast.success('Invitation accepted successfully!')
+        // Refresh tasks to show new assignment with force refresh to clear cache
+        await tasksStore.fetchTasks(true)
         // Navigate to collaborations page
         router.push('/collaborations')
       } catch (error) {
-        console.error('Failed to accept invitation:', error)
-        alert('Failed to accept invitation. Please try again.')
+        toast.error('Failed to accept invitation. Please try again.')
         // Still navigate to the task
         router.push(`/dashboard?task=${notification.task_id}`)
       }
     } else if (confirm('Do you want to decline this invitation?')) {
       try {
-        console.log('Declining invitation with ID:', invitationId)
-        const result = await interactionsStore.declineInvitation(invitationId)
-        console.log('Invitation decline result:', result)
-        alert('Invitation declined.')
+        await interactionsStore.declineInvitation(invitationId)
+        toast.success('Invitation declined.')
       } catch (error) {
-        console.error('Failed to decline invitation:', error)
-        alert('Failed to decline invitation. Please try again.')
+        toast.error('Failed to decline invitation. Please try again.')
       }
     } else {
       // Just navigate to the task without accepting/declining

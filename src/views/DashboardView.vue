@@ -291,6 +291,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/counter'
 import { useTasksStore } from '@/stores/tasks'
 import { useApi } from '@/composables/useApi'
+import { toast } from '@/composables/useToast'
 import Sidebar from '@/components/Sidebar.vue'
 import TaskModal from '@/components/TaskModal.vue'
 import TaskComments from '@/components/TaskComments.vue'
@@ -331,14 +332,17 @@ const handleTaskCreated = () => {
 
 const handleTaskUpdated = async () => {
   showEditTaskModal.value = false
-  // Don't set selectedTask to null, instead refresh the tasks and update the selected task
-  await tasksStore.fetchTasks()
   
-  // If we have a selectedTask, refresh its data from the updated tasks list
+  // If we have a selectedTask, refresh its data using the optimized fetchTaskById method
   if (selectedTask.value && selectedTask.value.id) {
-    const updatedTask = tasksStore.tasks.find(task => task.id === selectedTask.value.id)
-    if (updatedTask) {
-      selectedTask.value = updatedTask
+    try {
+      const result = await tasksStore.fetchTaskById(selectedTask.value.id, true) // Force refresh
+      if (result.success && result.task) {
+        selectedTask.value = result.task
+        toast.success('Task updated successfully')
+      }
+    } catch (error) {
+      toast.error('Error refreshing task details: ' + (error.response?.data?.message || 'Unknown error'))
     }
   }
 }
@@ -365,20 +369,25 @@ const toggleTaskStatus = async (task) => {
   try {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed'
     await tasksStore.updateTask(task.id, { status: newStatus })
+    toast.success(`Task marked as ${newStatus}`)
   } catch (err) {
-    console.error('Failed to update task status:', err)
+    toast.error('Failed to update task status: ' + (err.response?.data?.message || 'Unknown error'))
   } finally {
     taskUpdating.value = null
   }
 }
 
-const applyFilters = () => {
+const applyFilters = async () => {
   const activeFilters = {}
   if (filters.status) activeFilters.status = filters.status
   if (filters.priority) activeFilters.priority = filters.priority
   if (filters.search) activeFilters.search = filters.search
   
-  tasksStore.fetchTasks(activeFilters)
+  try {
+    await tasksStore.fetchTasks(activeFilters, true) // Force refresh
+  } catch (error) {
+    toast.error('Error applying filters: ' + (error.response?.data?.message || 'Unknown error'))
+  }
 }
 
 const formatStatus = (status) => {
@@ -415,59 +424,48 @@ const startCollaboration = async (task) => {
       due_date: dueDate.toISOString().split('T')[0]
     };
     
-    console.log('Creating collaboration task with data:', newTaskData);
-    
     // Create the new task
     const result = await tasksStore.createTask(newTaskData);
-    console.log('Collaboration task creation result:', result);
     
     if (result.success) {
       // Now manually create a task interaction with collaborator role
       try {
         const taskId = result.data.task.id;
-        console.log('Creating invitation for task ID:', taskId);
+        
+        // Get the API instances
+        const { invitations: invitationsApi } = useApi();
         
         // Create an invitation for the current user as a collaborator
-        const { api } = useApi();
-        const response = await api.post(`/api/tasks/${taskId}/invitations`, {
+        const inviteResponse = await invitationsApi.create(taskId, {
           invited_user_id: authStore.user.id,
           role: 'collaborator',
           message: 'Self-assigned as collaborator'
         });
-        console.log('Created collaborator invitation:', response.data);
         
         // Auto-accept the invitation
-        if (response.data.success && response.data.invitation && response.data.invitation.id) {
-          const interactionId = response.data.invitation.id;
-          console.log('Accepting invitation with ID:', interactionId);
-          const { invitations: invitationsApi } = useApi();
-          const acceptResponse = await invitationsApi.accept(interactionId);
-          console.log('Auto-accepted invitation response:', acceptResponse.data);
-        } else {
-          console.error('Failed to get invitation ID from response:', response.data);
+        if (inviteResponse.data.success && inviteResponse.data.invitation && inviteResponse.data.invitation.id) {
+          const interactionId = inviteResponse.data.invitation.id;
+          await invitationsApi.accept(interactionId);
         }
       } catch (err) {
-        console.error('Error creating collaborator assignment:', err.response?.data || err.message || err);
+        toast.error('Error creating collaborator assignment: ' + (err.response?.data?.message || err.message || 'Unknown error'));
+        // Continue with the process even if this part fails
       }
       
-      // Delete the original task
+      // Delete the original task with optimistic UI update
       await tasksStore.deleteTask(task.id);
       
-      // Refresh tasks before navigating
-      await tasksStore.fetchTasks();
-      
-      // Log the tasks after refresh to debug
-      console.log('Tasks after refresh:', tasksStore.tasks);
-      console.log('Current user ID:', authStore.user.id);
+      // Force refresh tasks with cache clearing before navigating
+      await tasksStore.fetchTasks({}, true);
       
       // Navigate to collaborations page
       router.push('/collaborations');
+      toast.success('Collaboration created successfully');
     } else {
-      alert('Failed to create collaboration: ' + result.error);
+      toast.error('Failed to create collaboration: ' + result.error);
     }
   } catch (error) {
-    console.error('Error creating collaboration:', error);
-    alert('An error occurred while creating the collaboration');
+    toast.error('Error creating collaboration: ' + (error.response?.data?.message || 'Unknown error'));
   }
 }
 
@@ -477,8 +475,12 @@ const openTaskDetails = (task) => {
 }
 
 
-onMounted(() => {
-  tasksStore.fetchTasks()
+onMounted(async () => {
+  try {
+    await tasksStore.fetchTasks({}, true) // Force refresh on initial load
+  } catch (error) {
+    toast.error('Error loading tasks: ' + (error.response?.data?.message || 'Unknown error'))
+  }
 })
 </script>
 

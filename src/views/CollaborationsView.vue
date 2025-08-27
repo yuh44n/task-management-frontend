@@ -265,6 +265,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTasksStore } from '@/stores/tasks'
 import { useAuthStore } from '@/stores/counter'
+import { toast } from '@/composables/useToast'
 import TaskComments from '@/components/TaskComments.vue'
 import TaskInvitations from '@/components/TaskInvitations.vue'
 import TaskModal from '@/components/TaskModal.vue'
@@ -294,56 +295,34 @@ const loadingTaskDetails = ref(false)
 
 // Computed property to filter only collaborative tasks
 const collaborativeTasks = computed(() => {
-  console.log('Tasks in store:', tasksStore.tasks);
-  
-  // First check if we have any tasks with assigned_users
-  const tasksWithAssignments = tasksStore.tasks.filter(task => 
-    Array.isArray(task.assigned_users) && task.assigned_users.length > 0
-  );
-  console.log('Tasks with assignments:', tasksWithAssignments.length);
-  
-  // Check for any tasks with missing IDs
-  const tasksWithoutIds = tasksStore.tasks.filter(task => !task.id);
-  if (tasksWithoutIds.length > 0) {
-    console.error('Found tasks without IDs:', tasksWithoutIds);
-  }
-  
-  const filteredTasks = tasksStore.tasks.filter(task => {
+  // Filter tasks that are collaborations and the user is involved in
+  return tasksStore.tasks.filter(task => {
+    // Skip tasks with missing IDs
+    if (!task.id) return false;
+    
     // Check if the current user is assigned to this task
     const userAssignment = task.assigned_users?.find(user => 
       user.id === authStore.user?.id
     );
     
-    // Log each task for debugging
-    console.log('Checking task:', task.id, task.title);
-    console.log('- User assigned:', !!userAssignment);
-    console.log('- Title check:', task.title.startsWith('Collaboration on:'));
-    console.log('- Assigned users:', task.assigned_users);
-    console.log('- Task data structure:', JSON.stringify(task));
-    
     // Consider it a collaboration if:
     // 1. The task title starts with 'Collaboration on:'
     // 2. User is assigned to the task OR user created the task
-    const isCollaborationTitle = task.title.startsWith('Collaboration on:');
+    const isCollaborationTitle = task.title?.startsWith('Collaboration on:') || false;
     const isUserInvolved = userAssignment || task.created_by === authStore.user?.id;
     
     return isCollaborationTitle && isUserInvolved;
   });
-  
-  console.log('Filtered collaborative tasks:', filteredTasks);
-  return filteredTasks;
 })
 
 // Fetch tasks when component mounts
 onMounted(async () => {
   loading.value = true
   try {
-    console.log('Fetching tasks for collaborations view')
-    await tasksStore.fetchTasks()
-    console.log('Fetched tasks:', tasksStore.tasks)
-    console.log('Filtered collaborative tasks:', collaborativeTasks.value)
+    await tasksStore.fetchTasks({}, true) // Force refresh on initial load
+    toast.success('Collaborations loaded successfully')
   } catch (error) {
-    console.error('Failed to fetch tasks:', error)
+    toast.error('Failed to fetch collaborations: ' + (error.response?.data?.message || 'Unknown error'))
   } finally {
     loading.value = false
   }
@@ -351,10 +330,9 @@ onMounted(async () => {
 
 // Methods
 const openTaskDetails = async (task) => {
-  console.log('Opening task details for:', task)
   // Make sure we have a valid task object with an ID
   if (!task || !task.id) {
-    console.error('Invalid task object:', task)
+    toast.error('Invalid task object')
     return
   }
   
@@ -364,15 +342,12 @@ const openTaskDetails = async (task) => {
   loadingTaskDetails.value = true
   
   try {
-    // Fetch the latest task data to ensure we have the most up-to-date information
-    await tasksStore.fetchTasks()
+    // Use the optimized fetchTaskById method to get the latest task data
+    const result = await tasksStore.fetchTaskById(task.id, true) // Force refresh
     
-    // Find the task in the updated tasks list
-    const updatedTask = tasksStore.tasks.find(t => t.id === task.id)
-    if (updatedTask) {
+    if (result.success && result.task) {
       // Create a deep copy of the task to avoid reference issues
-      // Ensure all required properties exist to prevent undefined errors
-      const taskCopy = JSON.parse(JSON.stringify(updatedTask))
+      const taskCopy = JSON.parse(JSON.stringify(result.task))
       
       // Ensure user objects have required properties
       if (taskCopy.assigned_users) {
@@ -392,7 +367,7 @@ const openTaskDetails = async (task) => {
       
       selectedTask.value = taskCopy
     } else {
-      // If task not found in updated list, use the provided task with safety checks
+      // If task not found, use the provided task with safety checks
       const taskCopy = JSON.parse(JSON.stringify(task))
       
       // Apply the same safety checks
@@ -412,10 +387,8 @@ const openTaskDetails = async (task) => {
       
       selectedTask.value = taskCopy
     }
-    
-    console.log('Task details loaded, selectedTask:', selectedTask.value)
   } catch (error) {
-    console.error('Error fetching updated task data:', error)
+    toast.error('Error fetching task details: ' + (error.response?.data?.message || 'Unknown error'))
     // Fallback to using the provided task with safety checks
     const taskCopy = JSON.parse(JSON.stringify(task))
     
@@ -463,14 +436,17 @@ const editTask = (task) => {
 
 const handleTaskUpdated = async () => {
   showEditTaskModal.value = false
-  await tasksStore.fetchTasks()
+  await tasksStore.fetchTasks({}, true) // Force refresh
   
   // If we have a selectedTask, refresh its data from the updated tasks list
   if (selectedTask.value && selectedTask.value.id) {
     const updatedTask = tasksStore.tasks.find(task => task.id === selectedTask.value.id)
     if (updatedTask) {
       selectedTask.value = updatedTask
+      toast.success('Task updated successfully')
     }
+  } else {
+    toast.success('Task updated successfully')
   }
 }
 

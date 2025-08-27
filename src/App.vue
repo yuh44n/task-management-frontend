@@ -12,8 +12,14 @@ const startNotificationPolling = () => {
   // Poll every 30 seconds
   notificationInterval = setInterval(async () => {
     if (authStore.isAuthenticated()) {
-      await interactionsStore.getUnreadCount()
-      await interactionsStore.fetchNotifications() // Add this line
+      try {
+        // Use forceRefresh to ensure we get the latest data
+        await interactionsStore.getUnreadCount(true)
+        await interactionsStore.fetchNotifications({}, true)
+      } catch (err) {
+        // Silent fail for background polling
+        console.warn('Background notification polling failed:', err.message || err)
+      }
     } else {
       clearInterval(notificationInterval)
     }
@@ -23,10 +29,17 @@ const startNotificationPolling = () => {
 onMounted(async () => {
   // If user is authenticated, initialize notifications
   if (authStore.isAuthenticated()) {
-    await interactionsStore.getUnreadCount()
-    await interactionsStore.fetchNotifications() // Add this line
-    await interactionsStore.fetchPendingInvitations()
-    startNotificationPolling()
+    try {
+      // Initialize with latest data
+      await interactionsStore.getUnreadCount(true)
+      await interactionsStore.fetchNotifications({}, true)
+      await interactionsStore.fetchPendingInvitations()
+      startNotificationPolling()
+    } catch (err) {
+      console.warn('Failed to initialize notifications:', err.message || err)
+      // Still start polling even if initial fetch fails
+      startNotificationPolling()
+    }
   }
 })
 
