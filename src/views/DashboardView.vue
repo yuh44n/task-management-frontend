@@ -3,7 +3,7 @@
     <Sidebar />
     
     <div class="main-content">
-      <!-- Header -->
+
       <div class="content-header">
         <h1>Dashboard</h1>
         <div class="user-info">
@@ -15,7 +15,7 @@
         </div>
       </div>
       
-      <!-- Stats Cards -->
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon total">
@@ -50,7 +50,7 @@
         </div>
       </div>
       
-      <!-- Filters Section -->
+
       <div class="tasks-container" style="margin-bottom: 20px;">
         <div class="tasks-header">
           <h2>Filter Tasks</h2>
@@ -91,7 +91,7 @@
         </div>
       </div>
 
-      <!-- Tasks List -->
+
       <div class="tasks-container">
         <div class="tasks-header">
           <h2>Tasks ({{ tasksStore.tasks.length }})</h2>
@@ -107,7 +107,7 @@
             :key="task.id"
             class="task-card"
           >
-            <!-- Task Header with Checkbox and Collab Button -->
+
             <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 12px;">
               <button
                 @click.stop="toggleTaskStatus(task)"
@@ -171,7 +171,7 @@
               </div>
             </div>
             
-            <!-- Assigned Users -->
+
             <div v-if="task.assigned_users && task.assigned_users.length > 0" style="margin-top: 10px;">
               <small style="color: #666;">Assigned to: </small>
               <span 
@@ -195,14 +195,14 @@
       </div>
     </div>
     
-    <!-- Add Task Modal -->
+
     <TaskModal 
       v-if="showAddTaskModal"
       @close="showAddTaskModal = false"
       @task-created="handleTaskCreated"
     />
     
-    <!-- Edit Task Modal -->
+
     <TaskModal 
       v-if="showEditTaskModal"
       :task="selectedTask"
@@ -210,7 +210,7 @@
       @task-updated="handleTaskUpdated"
     />
 
-        <!-- Task Details Modal -->
+
         <div v-if="selectedTask && showTaskModal" class="modal-overlay" @click="closeTaskModal">
           <div class="modal-content task-details-modal" @click.stop>
             <div class="modal-header">
@@ -268,13 +268,13 @@
                 </div>
               </div>
               
-              <!-- Task Attachments -->
+
               <div class="task-attachments">
                 <h5>Attachments</h5>
                 <FileAttachments :taskId="selectedTask.id" />
               </div>
               
-              <!-- Collaboration Components -->
+
               <div class="collaboration-section">
                 <TaskComments :taskId="selectedTask.id" />
                 <TaskInvitations :taskId="selectedTask.id" />
@@ -331,17 +331,14 @@ const handleTaskCreated = () => {
 
 const handleTaskUpdated = async () => {
   showEditTaskModal.value = false
+  // Don't set selectedTask to null, instead refresh the tasks and update the selected task
+  await tasksStore.fetchTasks()
   
-  // If we have a selectedTask, refresh its data using the optimized fetchTaskById method
+  // If we have a selectedTask, refresh its data from the updated tasks list
   if (selectedTask.value && selectedTask.value.id) {
-    try {
-      const result = await tasksStore.fetchTaskById(selectedTask.value.id, true) // Force refresh
-      if (result.success && result.task) {
-        selectedTask.value = result.task
-        console.log('Task updated successfully')
-      }
-    } catch (error) {
-      console.error('Error refreshing task details: ' + (error.response?.data?.message || 'Unknown error'))
+    const updatedTask = tasksStore.tasks.find(task => task.id === selectedTask.value.id)
+    if (updatedTask) {
+      selectedTask.value = updatedTask
     }
   }
 }
@@ -368,25 +365,20 @@ const toggleTaskStatus = async (task) => {
   try {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed'
     await tasksStore.updateTask(task.id, { status: newStatus })
-    console.log(`Task marked as ${newStatus}`)
   } catch (err) {
-    console.error('Failed to update task status: ' + (err.response?.data?.message || 'Unknown error'))
+    console.error('Failed to update task status:', err)
   } finally {
     taskUpdating.value = null
   }
 }
 
-const applyFilters = async () => {
+const applyFilters = () => {
   const activeFilters = {}
   if (filters.status) activeFilters.status = filters.status
   if (filters.priority) activeFilters.priority = filters.priority
   if (filters.search) activeFilters.search = filters.search
   
-  try {
-    await tasksStore.fetchTasks(activeFilters, true) // Force refresh
-  } catch (error) {
-    console.error('Error applying filters: ' + (error.response?.data?.message || 'Unknown error'))
-  }
+  tasksStore.fetchTasks(activeFilters)
 }
 
 const formatStatus = (status) => {
@@ -423,48 +415,59 @@ const startCollaboration = async (task) => {
       due_date: dueDate.toISOString().split('T')[0]
     };
     
+    console.log('Creating collaboration task with data:', newTaskData);
+    
     // Create the new task
     const result = await tasksStore.createTask(newTaskData);
+    console.log('Collaboration task creation result:', result);
     
     if (result.success) {
       // Now manually create a task interaction with collaborator role
       try {
         const taskId = result.data.task.id;
-        
-        // Get the API instances
-        const { invitations: invitationsApi } = useApi();
+        console.log('Creating invitation for task ID:', taskId);
         
         // Create an invitation for the current user as a collaborator
-        const inviteResponse = await invitationsApi.create(taskId, {
+        const { api } = useApi();
+        const response = await api.post(`/api/tasks/${taskId}/invitations`, {
           invited_user_id: authStore.user.id,
           role: 'collaborator',
           message: 'Self-assigned as collaborator'
         });
+        console.log('Created collaborator invitation:', response.data);
         
         // Auto-accept the invitation
-        if (inviteResponse.data.success && inviteResponse.data.invitation && inviteResponse.data.invitation.id) {
-          const interactionId = inviteResponse.data.invitation.id;
-          await invitationsApi.accept(interactionId);
+        if (response.data.success && response.data.invitation && response.data.invitation.id) {
+          const interactionId = response.data.invitation.id;
+          console.log('Accepting invitation with ID:', interactionId);
+          const { invitations: invitationsApi } = useApi();
+          const acceptResponse = await invitationsApi.accept(interactionId);
+          console.log('Auto-accepted invitation response:', acceptResponse.data);
+        } else {
+          console.error('Failed to get invitation ID from response:', response.data);
         }
       } catch (err) {
-        console.error('Error creating collaborator assignment: ' + (err.response?.data?.message || err.message || 'Unknown error'));
-        // Continue with the process even if this part fails
+        console.error('Error creating collaborator assignment:', err.response?.data || err.message || err);
       }
       
-      // Delete the original task with optimistic UI update
+      // Delete the original task
       await tasksStore.deleteTask(task.id);
       
-      // Force refresh tasks with cache clearing before navigating
-      await tasksStore.fetchTasks({}, true);
+      // Refresh tasks before navigating
+      await tasksStore.fetchTasks();
+      
+      // Log the tasks after refresh to debug
+      console.log('Tasks after refresh:', tasksStore.tasks);
+      console.log('Current user ID:', authStore.user.id);
       
       // Navigate to collaborations page
       router.push('/collaborations');
-      console.log('Collaboration created successfully');
     } else {
-      console.error('Failed to create collaboration: ' + result.error);
+      alert('Failed to create collaboration: ' + result.error);
     }
   } catch (error) {
-    console.error('Error creating collaboration: ' + (error.response?.data?.message || 'Unknown error'));
+    console.error('Error creating collaboration:', error);
+    alert('An error occurred while creating the collaboration');
   }
 }
 
@@ -474,12 +477,8 @@ const openTaskDetails = (task) => {
 }
 
 
-onMounted(async () => {
-  try {
-    await tasksStore.fetchTasks({}, true) // Force refresh on initial load
-  } catch (error) {
-    console.error('Error loading tasks: ' + (error.response?.data?.message || 'Unknown error'))
-  }
+onMounted(() => {
+  tasksStore.fetchTasks()
 })
 </script>
 

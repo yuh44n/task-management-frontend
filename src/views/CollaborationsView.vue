@@ -3,7 +3,6 @@
     <Sidebar />
     
     <div class="main-content">
-      <!-- Header -->
       <div class="content-header">
         <h1>Collaborations</h1>
         <div class="user-info">
@@ -37,7 +36,6 @@
           :key="task.id"
           class="collab-task-card"
         >
-          <!-- Task Header with Status Badge -->
           <div class="collab-task-header">
             <div class="task-title-section">
               <h3 class="task-title">{{ task.title }}</h3>
@@ -66,10 +64,8 @@
             </div>
           </div>
 
-          <!-- Task Description -->
           <div class="task-description">{{ task.description }}</div>
 
-          <!-- Task Meta Information -->
           <div class="task-meta">
             <div class="task-meta-item">
               <i class="fas fa-calendar-alt"></i>
@@ -85,7 +81,6 @@
             </div>
           </div>
 
-          <!-- Collaborators -->
           <div class="task-collaborators">
             <h4>Collaborators</h4>
             <div class="collaborators-list">
@@ -105,7 +100,6 @@
             </div>
           </div>
 
-          <!-- Recent Activity -->
           <div class="task-activity">
             <h4>Recent Activity</h4>
             <div v-if="task.recent_comments && task.recent_comments.length > 0" class="activity-list">
@@ -131,7 +125,6 @@
             </div>
           </div>
 
-          <!-- Task Action Buttons -->
           <div class="task-footer">
             <button 
               @click.prevent.stop="openTaskDetails(task)" 
@@ -154,7 +147,6 @@
     </div>
       </div>
 
-    <!-- Task Details Modal -->
     <div v-if="showTaskDetails" class="modal-overlay" @click="closeTaskDetails">
       <div class="modal-content task-details-modal" @click.stop>
         <div class="modal-header">
@@ -198,7 +190,6 @@
             </div>
           </div>
 
-          <!-- Current Collaborators -->
           <div class="collaborators-section">
             <h4>Current Collaborators</h4>
             <div class="collaborators-list">
@@ -218,18 +209,15 @@
             </div>
           </div>
 
-          <!-- Task Attachments -->
           <div v-if="selectedTask && selectedTask.id" class="task-attachments">
             <h5>Attachments</h5>
             <FileAttachments :taskId="selectedTask.id" />
           </div>
 
-          <!-- Task Comments -->
           <div v-if="selectedTask && selectedTask.id">
             <TaskComments :taskId="selectedTask.id" />
           </div>
 
-          <!-- Task Invitations/Collaborators -->
           <div v-if="selectedTask && selectedTask.id">
             <TaskInvitations :taskId="selectedTask.id" />
           </div>
@@ -250,7 +238,6 @@
       </div>
     </div>
 
-    <!-- Edit Task Modal -->
     <TaskModal 
       v-if="showEditTaskModal"
       :task="selectedTask"
@@ -275,7 +262,6 @@ import FileAttachments from '@/components/FileAttachments.vue'
 const tasksStore = useTasksStore()
 const authStore = useAuthStore()
 
-// Computed property for user initials in the header
 const userInitials = computed(() => {
   if (!authStore.user?.name) return 'U'
   return authStore.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
@@ -292,46 +278,66 @@ const showEditTaskModal = ref(false)
 const selectedTask = ref({})
 const loadingTaskDetails = ref(false)
 
-// Computed property to filter only collaborative tasks
 const collaborativeTasks = computed(() => {
-  // Filter tasks that are collaborations and the user is involved in
-  return tasksStore.tasks.filter(task => {
-    // Skip tasks with missing IDs
-    if (!task.id) return false;
-    
+  console.log('Tasks in store:', tasksStore.tasks);
+  
+  // First check if we have any tasks with assigned_users
+  const tasksWithAssignments = tasksStore.tasks.filter(task => 
+    Array.isArray(task.assigned_users) && task.assigned_users.length > 0
+  );
+  console.log('Tasks with assignments:', tasksWithAssignments.length);
+  
+  // Check for any tasks with missing IDs
+  const tasksWithoutIds = tasksStore.tasks.filter(task => !task.id);
+  if (tasksWithoutIds.length > 0) {
+    console.error('Found tasks without IDs:', tasksWithoutIds);
+  }
+  
+  const filteredTasks = tasksStore.tasks.filter(task => {
     // Check if the current user is assigned to this task
     const userAssignment = task.assigned_users?.find(user => 
       user.id === authStore.user?.id
     );
     
+    // Log each task for debugging
+    console.log('Checking task:', task.id, task.title);
+    console.log('- User assigned:', !!userAssignment);
+    console.log('- Title check:', task.title.startsWith('Collaboration on:'));
+    console.log('- Assigned users:', task.assigned_users);
+    console.log('- Task data structure:', JSON.stringify(task));
+    
     // Consider it a collaboration if:
     // 1. The task title starts with 'Collaboration on:'
     // 2. User is assigned to the task OR user created the task
-    const isCollaborationTitle = task.title?.startsWith('Collaboration on:') || false;
+    const isCollaborationTitle = task.title.startsWith('Collaboration on:');
     const isUserInvolved = userAssignment || task.created_by === authStore.user?.id;
     
     return isCollaborationTitle && isUserInvolved;
   });
+  
+  console.log('Filtered collaborative tasks:', filteredTasks);
+  return filteredTasks;
 })
 
-// Fetch tasks when component mounts
 onMounted(async () => {
   loading.value = true
   try {
-    await tasksStore.fetchTasks({}, true) // Force refresh on initial load
-    console.log('Collaborations loaded successfully')
+    console.log('Fetching tasks for collaborations view')
+    await tasksStore.fetchTasks()
+    console.log('Fetched tasks:', tasksStore.tasks)
+    console.log('Filtered collaborative tasks:', collaborativeTasks.value)
   } catch (error) {
-    console.error('Failed to fetch collaborations: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to fetch tasks:', error)
   } finally {
     loading.value = false
   }
 })
 
-// Methods
 const openTaskDetails = async (task) => {
+  console.log('Opening task details for:', task)
   // Make sure we have a valid task object with an ID
   if (!task || !task.id) {
-    console.error('Invalid task object')
+    console.error('Invalid task object:', task)
     return
   }
   
@@ -341,12 +347,15 @@ const openTaskDetails = async (task) => {
   loadingTaskDetails.value = true
   
   try {
-    // Use the optimized fetchTaskById method to get the latest task data
-    const result = await tasksStore.fetchTaskById(task.id, true) // Force refresh
+    // Fetch the latest task data to ensure we have the most up-to-date information
+    await tasksStore.fetchTasks()
     
-    if (result.success && result.task) {
+    // Find the task in the updated tasks list
+    const updatedTask = tasksStore.tasks.find(t => t.id === task.id)
+    if (updatedTask) {
       // Create a deep copy of the task to avoid reference issues
-      const taskCopy = JSON.parse(JSON.stringify(result.task))
+      // Ensure all required properties exist to prevent undefined errors
+      const taskCopy = JSON.parse(JSON.stringify(updatedTask))
       
       // Ensure user objects have required properties
       if (taskCopy.assigned_users) {
@@ -366,7 +375,7 @@ const openTaskDetails = async (task) => {
       
       selectedTask.value = taskCopy
     } else {
-      // If task not found, use the provided task with safety checks
+      // If task not found in updated list, use the provided task with safety checks
       const taskCopy = JSON.parse(JSON.stringify(task))
       
       // Apply the same safety checks
@@ -386,8 +395,10 @@ const openTaskDetails = async (task) => {
       
       selectedTask.value = taskCopy
     }
+    
+    console.log('Task details loaded, selectedTask:', selectedTask.value)
   } catch (error) {
-    console.error('Error fetching task details: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Error fetching updated task data:', error)
     // Fallback to using the provided task with safety checks
     const taskCopy = JSON.parse(JSON.stringify(task))
     
@@ -435,17 +446,14 @@ const editTask = (task) => {
 
 const handleTaskUpdated = async () => {
   showEditTaskModal.value = false
-  await tasksStore.fetchTasks({}, true) // Force refresh
+  await tasksStore.fetchTasks()
   
   // If we have a selectedTask, refresh its data from the updated tasks list
   if (selectedTask.value && selectedTask.value.id) {
     const updatedTask = tasksStore.tasks.find(task => task.id === selectedTask.value.id)
     if (updatedTask) {
       selectedTask.value = updatedTask
-      console.log('Task updated successfully')
     }
-  } else {
-    console.log('Task updated successfully')
   }
 }
 

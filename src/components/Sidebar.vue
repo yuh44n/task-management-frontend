@@ -43,8 +43,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/counter'
 import { useRouter } from 'vue-router'
-// Remove this import since we're not using it here anymore
-// import NotificationsPanel from './NotificationsPanel.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()

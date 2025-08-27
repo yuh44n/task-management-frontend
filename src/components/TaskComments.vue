@@ -4,7 +4,7 @@
       <h3>Comments ({{ interactionsStore.comments.length }})</h3>
     </div>
 
-    <!-- Add Comment Form -->
+
     <div class="comment-form">
       <div class="form-group">
         <textarea
@@ -47,7 +47,7 @@
       </div>
     </div>
 
-    <!-- Comments List -->
+
     <div v-if="interactionsStore.loading" class="loading">
       <i class="fas fa-spinner fa-spin"></i> Loading comments...
     </div>
@@ -64,7 +64,7 @@
         class="comment-item"
         :class="{ 'is-reply': comment.parent_id }"
       >
-        <!-- Comment Header -->
+
         <div class="comment-header">
           <div class="comment-author">
             <div class="user-avatar-small">
@@ -93,7 +93,7 @@
           </div>
         </div>
 
-        <!-- Comment Content -->
+
         <div class="comment-content">
           <div v-if="editingComment?.id === comment.id" class="edit-form">
             <textarea
@@ -116,7 +116,7 @@
           </div>
           <div v-else class="comment-text" v-html="formatCommentText(comment.content)"></div>
           
-          <!-- Comment Attachments -->
+
           <div v-if="comment.attachments && comment.attachments.length > 0" class="comment-attachments-list">
             <div class="attachments-header">
               <i class="fas fa-paperclip"></i>
@@ -140,7 +140,7 @@
           </div>
         </div>
 
-        <!-- Comment Actions -->
+
         <div class="comment-footer">
           <button
             @click="showReplyForm = comment.id"
@@ -151,7 +151,7 @@
           </button>
         </div>
 
-        <!-- Reply Form -->
+
         <div v-if="showReplyForm === comment.id" class="reply-form">
           <div class="form-group">
             <textarea
@@ -196,7 +196,7 @@
           </div>
         </div>
 
-        <!-- Replies Toggle Button -->
+
         <div v-if="comment.replies && comment.replies.length > 0" class="replies-toggle">
           <button @click="toggleReplies(comment.id)" class="btn-link replies-toggle-btn">
             <i class="fas" :class="showRepliesFor.includes(comment.id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
@@ -204,7 +204,7 @@
           </button>
         </div>
 
-        <!-- Replies -->
+
         <div v-if="comment.replies && comment.replies.length > 0 && showRepliesFor.includes(comment.id)" class="replies">
           <div
             v-for="reply in comment.replies"
@@ -260,7 +260,6 @@
               </div>
               <div v-else class="comment-text" v-html="formatCommentText(reply.content)"></div>
               
-              <!-- Reply Attachments -->
               <div v-if="reply.attachments && reply.attachments.length > 0" class="comment-attachments-list">
                 <div class="attachments-header">
                   <i class="fas fa-paperclip"></i>
@@ -318,60 +317,74 @@ const mentionQuery = ref('')
 const showRepliesFor = ref([])
 
 const handleFileUploaded = async (attachment) => {
-  // Force refresh to ensure we get the latest data with attachments
-  await interactionsStore.refreshComments(props.taskId, true)
+  console.log('File uploaded, refreshing comments:', attachment)
+  await interactionsStore.refreshComments(props.taskId)
 }
 
 onMounted(async () => {
-  // Use the optimized fetchComments method with forceRefresh for initial load
-  await interactionsStore.fetchComments(props.taskId, true)
-  await loadMentionableUsers(true) // Force refresh mentionable users on initial load
+  console.log('Component mounted, taskId:', props.taskId)
+  await interactionsStore.fetchComments(props.taskId)
+  await loadMentionableUsers()
+  console.log('After loading mentionable users in onMounted')
 })
 
 watch(() => props.taskId, async (newTaskId) => {
   if (newTaskId) {
-    await interactionsStore.fetchComments(newTaskId, true) // Force refresh when task changes
-    await loadMentionableUsers(true) // Force refresh mentionable users when task changes
+    await interactionsStore.fetchComments(newTaskId)
+    await loadMentionableUsers()
   }
 })
 
-const loadMentionableUsers = async (forceRefresh = false) => {
+const loadMentionableUsers = async () => {
   try {
     if (!props.taskId) {
+      console.warn('No taskId provided to loadMentionableUsers')
       mentionableUsers.value = []
       return
     }
     
-    const users = await interactionsStore.getMentionableUsers(props.taskId, forceRefresh)
+    console.log('Loading mentionable users for task:', props.taskId)
+    const users = await interactionsStore.getMentionableUsers(props.taskId)
     
     if (Array.isArray(users)) {
       mentionableUsers.value = users
+      console.log('Loaded mentionable users:', users.length)
     } else {
+      console.warn('getMentionableUsers did not return an array:', users)
       mentionableUsers.value = []
     }
   } catch (error) {
+    console.error('Failed to load mentionable users:', error)
     mentionableUsers.value = []
-    console.error('Failed to load mentionable users: ' + (error.response?.data?.message || 'Unknown error'))
   }
 }
 
 const filteredMentionableUsers = computed(() => {
+  console.log('Filtering mentionable users with query:', mentionQuery.value)
+  console.log('Available mentionable users:', mentionableUsers.value)
+  
+  // Ensure mentionableUsers is an array
   if (!Array.isArray(mentionableUsers.value)) {
+    console.warn('mentionableUsers is not an array in computed property')
     return []
   }
   
   if (!mentionQuery.value) {
+    console.log('No query, returning all users:', mentionableUsers.value)
     return mentionableUsers.value
   }
   
   try {
     const filtered = mentionableUsers.value.filter(user => {
+      // Check if user object is valid and has a name property
       if (!user || typeof user !== 'object' || !user.name) {
+        console.warn('Invalid user object in filter:', user)
         return false
       }
       return user.name.toLowerCase().includes(mentionQuery.value.toLowerCase())
     })
     
+    console.log('Filtered users:', filtered)
     return filtered
   } catch (error) {
     console.error('Error filtering mentionable users:', error)
@@ -410,41 +423,53 @@ const handleMentionInput = (event) => {
       showMentionSuggestions.value = false
     }
     
+    // Force a check for '@' character if it's in the text
     if (text.includes('@') && !showMentionSuggestions.value) {
       const atIndex = beforeCursor.lastIndexOf('@')
       if (atIndex !== -1 && atIndex === cursorPosition - 1) {
+        // We just typed '@'
         showMentionSuggestions.value = true
         mentionQuery.value = ''
         
+        // If we don't have mentionable users yet, load them
         if (!mentionableUsers.value || mentionableUsers.value.length === 0) {
           loadMentionableUsers()
         }
       }
     }
   } catch (error) {
+    console.error('Error in handleMentionInput:', error)
     showMentionSuggestions.value = false
   }
 }
 
+// Track the active textarea element
 const activeTextareaRef = ref(null)
 
 const selectMention = (user) => {
   try {
+    // Validate user object
     if (!user || typeof user !== 'object') {
+      console.error('Invalid user object:', user)
       showMentionSuggestions.value = false
       return
     }
     
+    // Ensure user has a name property
     if (!user.name) {
+      console.warn('User object missing name property:', user)
       user.name = user.email || user.username || 'user'
     }
     
+    // Use the stored reference to the active textarea
     const activeTextarea = activeTextareaRef.value
     if (!activeTextarea || (activeTextarea.tagName !== 'TEXTAREA')) {
+      console.error('No active textarea found')
       showMentionSuggestions.value = false
       return
     }
     
+    // Determine which textarea is active and get its value
     let text, textSetter
     if (activeTextarea === document.querySelector('.comment-form textarea')) {
       text = newComment.value || ''
@@ -453,6 +478,7 @@ const selectMention = (user) => {
       text = replyContent.value || ''
       textSetter = (newValue) => { replyContent.value = newValue }
     } else {
+      console.error('Unknown textarea')
       showMentionSuggestions.value = false
       return
     }
@@ -463,22 +489,26 @@ const selectMention = (user) => {
     
     const mentionMatch = beforeCursor.match(/@(\w*)$/)
     if (mentionMatch) {
+      // Create a safe display name (remove any @ symbols from the user's name)
       const safeName = user.name.replace(/@/g, '')
       const newText = beforeCursor.replace(/@(\w*)$/, `@${safeName} `) + afterCursor
       textSetter(newText)
       
+      // Set focus back to the textarea and place cursor after the inserted mention
       setTimeout(() => {
         try {
           activeTextarea.focus()
           const newCursorPosition = beforeCursor.length - mentionMatch[0].length + `@${safeName} `.length
           activeTextarea.setSelectionRange(newCursorPosition, newCursorPosition)
         } catch (focusError) {
-          // Focus error handling
+          console.error('Error setting focus or cursor position:', focusError)
         }
       }, 0)
+    } else {
+      console.warn('No mention pattern found in text')
     }
   } catch (error) {
-    // Error handling
+    console.error('Error in selectMention:', error)
   } finally {
     showMentionSuggestions.value = false
   }
@@ -489,15 +519,14 @@ const submitComment = async () => {
   
   submitting.value = true
   try {
-    // Use the optimized addComment method with optimistic UI updates
     await interactionsStore.addComment(props.taskId, {
       content: newComment.value
     })
     newComment.value = ''
-    // No need to refresh comments as the store handles optimistic updates
-    console.log('Comment added successfully')
+    // Refresh comments to ensure we have the latest data including attachments
+    await interactionsStore.refreshComments(props.taskId)
   } catch (error) {
-    console.error('Failed to add comment: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to add comment:', error)
   } finally {
     submitting.value = false
   }
@@ -507,7 +536,6 @@ const submitReply = async (parentId) => {
   if (!replyContent.value.trim()) return
   
   try {
-    // Use the optimized addComment method with optimistic UI updates
     await interactionsStore.addComment(props.taskId, {
       content: replyContent.value,
       parent_id: parentId
@@ -515,14 +543,15 @@ const submitReply = async (parentId) => {
     replyContent.value = ''
     showReplyForm.value = null
     
+    // Automatically show replies for this comment after adding a reply
     if (!showRepliesFor.value.includes(parentId)) {
       showRepliesFor.value.push(parentId)
     }
     
-    // No need to refresh comments as the store handles optimistic updates
-    console.log('Reply added successfully')
+    // Refresh comments to ensure we have the latest data including attachments
+    await interactionsStore.refreshComments(props.taskId)
   } catch (error) {
-    console.error('Failed to add reply: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to add reply:', error)
   }
 }
 
@@ -534,15 +563,14 @@ const saveEdit = async () => {
   if (!editingComment.value?.content.trim()) return
   
   try {
-    // Use the optimized updateComment method with optimistic UI updates
     await interactionsStore.updateComment(editingComment.value.id, {
       content: editingComment.value.content
     })
     editingComment.value = null
-    // No need to refresh comments as the store handles optimistic updates
-    console.log('Comment updated successfully')
+    // Refresh comments to ensure we have the latest data including attachments
+    await interactionsStore.refreshComments(props.taskId)
   } catch (error) {
-    console.error('Failed to update comment: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to update comment:', error)
   }
 }
 
@@ -558,8 +586,10 @@ const cancelReply = () => {
 const toggleReplies = (commentId) => {
   const index = showRepliesFor.value.indexOf(commentId)
   if (index === -1) {
+    // Show replies for this comment
     showRepliesFor.value.push(commentId)
   } else {
+    // Hide replies for this comment
     showRepliesFor.value.splice(index, 1)
   }
 }
@@ -568,11 +598,9 @@ const deleteComment = async (commentId) => {
   if (!confirm('Are you sure you want to delete this comment?')) return
   
   try {
-    // Use the optimized deleteComment method with optimistic UI updates
     await interactionsStore.deleteComment(commentId)
-    console.log('Comment deleted successfully')
   } catch (error) {
-    console.error('Failed to delete comment: ' + (error.response?.data?.message || 'Unknown error'))
+    console.error('Failed to delete comment:', error)
   }
 }
 
@@ -599,6 +627,7 @@ const formatCommentText = (text) => {
   if (!text) return ''
   
   try {
+    // Convert line breaks to <br>
     let formattedText = text.replace(/\n/g, '<br>')
     
     // Ensure mentionableUsers is an array
@@ -607,8 +636,10 @@ const formatCommentText = (text) => {
       return formattedText
     }
     
+    // Convert @mentions to highlighted text
     formattedText = formattedText.replace(/@([\w\s]+)/g, (match, username) => {
       try {
+        // Find if this username exists in mentionable users
         const mentionedUser = mentionableUsers.value.find(user => {
           if (!user || typeof user !== 'object' || !user.name) return false
           return user.name.toLowerCase() === username.trim().toLowerCase()
@@ -617,19 +648,22 @@ const formatCommentText = (text) => {
         if (mentionedUser) {
           return `<span class="mention">@${username}</span>`
         } else {
-          return match
+          return match // Keep as is if user not found
         }
       } catch (innerError) {
+        console.error('Error processing mention:', innerError)
         return match
       }
     })
     
     return formattedText
   } catch (error) {
+    console.error('Error formatting comment text:', error)
     return text || ''
   }
 }
 
+// File handling helper functions
 const getFileIcon = (mimeType) => {
   if (!mimeType) return 'fas fa-file'
   
@@ -724,12 +758,10 @@ const formatFileSize = (bytes) => {
   max-height: 200px;
   overflow-y: auto;
   width: 100%;
-  /* Debug styles to make it more visible */
   min-height: 50px;
   padding: 5px;
 }
 
-/* Comment Attachments Styles */
 .comment-attachments-list {
   margin-top: 1rem;
   padding: 0.75rem;

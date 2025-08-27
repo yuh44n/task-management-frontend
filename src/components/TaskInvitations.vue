@@ -7,7 +7,7 @@
       </button>
     </div>
 
-    <!-- Invite Form Modal -->
+
     <div v-if="showInviteForm" class="modal-overlay" @click="closeInviteForm">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <!-- Pending Invitations -->
+
     <div v-if="pendingInvitations.length > 0" class="pending-invitations">
       <h4>Pending Invitations</h4>
       <div class="invitation-list">
@@ -108,7 +108,7 @@
       </div>
     </div>
 
-    <!-- Current Collaborators -->
+
     <div class="collaborators-section">
       <h4>Current Collaborators</h4>
       <div class="collaborators-list">
@@ -130,7 +130,7 @@
       </div>
     </div>
 
-    <!-- No Collaborators Message -->
+
     <div v-if="taskAssignments.length === 0" class="no-collaborators">
       <i class="fas fa-users"></i>
       <p>No collaborators yet. Invite users to start collaborating!</p>
@@ -165,7 +165,7 @@ const inviteForm = ref({
   message: ''
 })
 
-// Computed properties
+
 const pendingInvitations = computed(() => {
   return interactionsStore.pendingInvitations.filter(inv => inv.task_id == props.taskId)
 })
@@ -234,7 +234,7 @@ const taskAssignments = computed(() => {
   })
 })
 
-// Debug computed property to check what's happening with collaborators
+
 const debugCollaborators = computed(() => {
   const assignments = taskAssignments.value
   console.log('Current collaborators:', assignments)
@@ -247,7 +247,7 @@ const isCollaborationTask = computed(() => {
   return task.title && task.title.startsWith('Collaboration on:')
 })
 
-// Methods
+
 const loadAvailableUsers = async () => {
   try {
     const response = await tasksStore.getUsers()
@@ -256,11 +256,11 @@ const loadAvailableUsers = async () => {
       !taskAssignments.value.some(assignment => assignment.user_id === user.id)
     )
   } catch (error) {
-    console.error('Failed to load available users')
+    console.error('Failed to load available users:', error)
   }
 }
 
-// Watch for changes in taskId
+
 watch(() => props.taskId, async (newTaskId) => {
   if (newTaskId) {
     // Force refresh tasks to ensure we have the latest data
@@ -268,7 +268,7 @@ watch(() => props.taskId, async (newTaskId) => {
   }
 })
 
-// Initialize component
+
 onMounted(async () => {
   if (props.taskId) {
     await tasksStore.fetchTasks()
@@ -284,10 +284,10 @@ const sendInvitation = async () => {
   try {
     await interactionsStore.sendInvitation(props.taskId, inviteForm.value)
     closeInviteForm()
-    // Refresh pending invitations with force refresh
-    await interactionsStore.fetchPendingInvitations(true)
+    // Refresh pending invitations
+    await interactionsStore.fetchPendingInvitations()
   } catch (error) {
-    // Error handling is now done in the store with console.error
+    console.error('Failed to send invitation:', error)
   } finally {
     sending.value = false
   }
@@ -299,7 +299,7 @@ const acceptInvitation = async (invitationId) => {
     // Refresh tasks to show new assignment
     await tasksStore.fetchTasks()
   } catch (error) {
-    // Error handling is now done in the store with console.error
+    console.error('Failed to accept invitation:', error)
   }
 }
 
@@ -307,7 +307,7 @@ const declineInvitation = async (invitationId) => {
   try {
     await interactionsStore.declineInvitation(invitationId)
   } catch (error) {
-    // Error handling is now done in the store with console.error
+    console.error('Failed to decline invitation:', error)
   }
 }
 
@@ -333,24 +333,16 @@ const formatDate = (date) => {
   })
 }
 
-// Lifecycle
+
 onMounted(async () => {
-  try {
-    await loadAvailableUsers()
-    await interactionsStore.fetchPendingInvitations(true) // Force refresh on initial load
-  } catch (error) {
-    // Error handling is now done in the store with console.error
-  }
+  await loadAvailableUsers()
+  await interactionsStore.fetchPendingInvitations()
 })
 
 watch(() => props.taskId, async (newTaskId) => {
   if (newTaskId) {
-    try {
-      await loadAvailableUsers()
-      await interactionsStore.fetchPendingInvitations(true) // Force refresh when task changes
-    } catch (error) {
-      // Error handling is now done in the store with console.error
-    }
+    await loadAvailableUsers()
+    await interactionsStore.fetchPendingInvitations()
   }
 })
 </script>
@@ -375,7 +367,7 @@ watch(() => props.taskId, async (newTaskId) => {
   font-weight: 600;
 }
 
-/* Modal Styles */
+
 .modal-overlay {
   position: fixed;
   top: 0;

@@ -3,7 +3,6 @@
     <Sidebar />
     
     <div class="main-content">
-      <!-- Header -->
       <div class="content-header">
         <h1>Admin Dashboard</h1>
         <div class="user-info">
@@ -14,7 +13,6 @@
         </div>
       </div>
       
-      <!-- Admin Stats Cards -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon total">
@@ -49,7 +47,6 @@
         </div>
       </div>
       
-      <!-- Tabs -->
       <div style="margin-bottom: 20px;">
         <div style="display: flex; border-bottom: 2px solid #eee;">
           <button 
@@ -69,7 +66,6 @@
         </div>
       </div>
       
-      <!-- Users Management Tab -->
       <div v-if="activeTab === 'users'" class="tasks-container">
         <div class="tasks-header">
           <h2>Users Management</h2>
@@ -122,7 +118,6 @@
         </div>
       </div>
       
-      <!-- All Tasks Tab -->
       <div v-if="activeTab === 'tasks'" class="tasks-container">
         <div class="tasks-header">
           <h2>All Tasks</h2>
@@ -148,7 +143,6 @@
               </span>
             </div>
             
-            <!-- Task Creator and Assigned Users -->
             <div style="margin-top: 10px; font-size: 12px; color: #666;">
               <div>
                 <strong>Created by:</strong> {{ task.creator?.name || 'Unknown' }}

@@ -67,7 +67,7 @@
           />
         </div>
         
-        <!-- Task Reminder Component has been removed -->
+
         
         <div class="form-group" v-if="authStore.isAdmin() && users.length > 0">
           <label class="form-label">Assign to Users</label>

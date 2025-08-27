@@ -1,7 +1,6 @@
 <template>
   <div class="auth-container">
     <div class="container" :class="{ active: isRegisterMode }">
-      <!-- Login Form -->
       <div class="form-box login">
         <form @submit.prevent="handleLogin">
           <h1>Login</h1>
@@ -37,7 +36,6 @@
         </form>
       </div>
 
-      <!-- Register Form -->
       <div class="form-box register">
         <form @submit.prevent="handleRegister">
           <h1>Register</h1>
@@ -93,7 +91,6 @@
         </form>
       </div>
 
-      <!-- Toggle Panel -->
       <div class="toggle-box">
         <div class="toggle-panel toggle-left">
           <h1>Hello, Friend!</h1>

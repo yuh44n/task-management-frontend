@@ -1,6 +1,6 @@
 <template>
   <div class="notifications-panel">
-    <!-- Notifications Toggle Button -->
+
     <div class="notifications-toggle">
       <button @click="togglePanel" class="btn-icon notifications-btn">
         <i class="fas fa-bell" :class="{'notification-icon-bell': unreadCount > 0}"></i>
@@ -8,7 +8,7 @@
       </button>
     </div>
 
-    <!-- Notifications Panel -->
+
     <div v-if="isOpen" class="notifications-dropdown">
       <div class="notifications-header">
         <h3>Notifications</h3>
@@ -26,7 +26,7 @@
         </div>
       </div>
 
-      <!-- Notifications List -->
+
       <div class="notifications-list">
         <div v-if="interactionsStore.loading" class="loading">
           <i class="fas fa-spinner fa-spin"></i> Loading notifications...
@@ -73,7 +73,7 @@
         </div>
       </div>
 
-      <!-- View All Link -->
+
       <div v-if="notifications.length > 0" class="notifications-footer">
         <button @click="viewAllNotifications" class="btn-link">
           View all notifications
@@ -81,7 +81,7 @@
       </div>
     </div>
 
-    <!-- Full Notifications View Modal -->
+
     <div v-if="showFullView" class="modal-overlay" @click="closeFullView">
       <div class="modal-content notifications-modal" @click.stop>
         <div class="modal-header">
@@ -110,7 +110,6 @@
               <option value="task_invitation">Invitations</option>
               <option value="invitation_accepted">Accepted invitations</option>
               <option value="invitation_declined">Declined invitations</option>
-              <!-- Reminder option removed -->
             </select>
           </div>
           
@@ -179,7 +178,7 @@ const isOpen = ref(false)
 const showFullView = ref(false)
 const filterType = ref('')
 
-// Computed properties
+
 const notifications = computed(() => {
   return interactionsStore.notifications.slice(0, 5) // Show only first 5 in dropdown
 })
@@ -195,7 +194,7 @@ const unreadCount = computed(() => {
   return interactionsStore.unreadCount
 })
 
-// Methods
+
 const togglePanel = () => {
   isOpen.value = !isOpen.value
   if (isOpen.value) {
@@ -217,8 +216,7 @@ const loadNotifications = async () => {
   try {
     await interactionsStore.fetchNotifications()
   } catch (error) {
-    // Use console.error instead of toast
-    console.error('Failed to load notifications. Please try again.')
+    console.error('Failed to load notifications:', error)
   }
 }
 
@@ -226,8 +224,7 @@ const markAsRead = async (notificationId) => {
   try {
     await interactionsStore.markAsRead(notificationId)
   } catch (error) {
-    // Use console.error instead of toast
-    console.error('Failed to mark notification as read. Please try again.')
+    console.error('Failed to mark notification as read:', error)
   }
 }
 
@@ -235,8 +232,7 @@ const markAllAsRead = async () => {
   try {
     await interactionsStore.markAllAsRead()
   } catch (error) {
-    // Use console.error instead of toast
-    console.error('Failed to mark all notifications as read. Please try again.')
+    console.error('Failed to mark all notifications as read:', error)
   }
 }
 
@@ -254,27 +250,34 @@ const handleNotificationClick = async (notification) => {
     // Get the correct invitation ID from the metadata
     // The notification contains the invitation_id in its metadata
     const invitationId = notification.metadata?.invitation_id || notification.id
+    console.log('Processing invitation with ID:', invitationId)
     
     // Confirm with the user if they want to accept the invitation
     if (confirm('Do you want to accept this invitation to collaborate on the task?')) {
       try {
+        console.log('Accepting invitation with ID:', invitationId)
         const result = await interactionsStore.acceptInvitation(invitationId)
-        console.log('Invitation accepted successfully!')
-        // Refresh tasks to show new assignment with force refresh to clear cache
-        await tasksStore.fetchTasks(true)
+        console.log('Invitation acceptance result:', result)
+        alert('Invitation accepted successfully!')
+        // Refresh tasks to show new assignment
+        await tasksStore.fetchTasks()
         // Navigate to collaborations page
         router.push('/collaborations')
       } catch (error) {
-        console.error('Failed to accept invitation. Please try again.')
+        console.error('Failed to accept invitation:', error)
+        alert('Failed to accept invitation. Please try again.')
         // Still navigate to the task
         router.push(`/dashboard?task=${notification.task_id}`)
       }
     } else if (confirm('Do you want to decline this invitation?')) {
       try {
-        await interactionsStore.declineInvitation(invitationId)
-        console.log('Invitation declined.')
+        console.log('Declining invitation with ID:', invitationId)
+        const result = await interactionsStore.declineInvitation(invitationId)
+        console.log('Invitation decline result:', result)
+        alert('Invitation declined.')
       } catch (error) {
-        console.error('Failed to decline invitation. Please try again.')
+        console.error('Failed to decline invitation:', error)
+        alert('Failed to decline invitation. Please try again.')
       }
     } else {
       // Just navigate to the task without accepting/declining
@@ -341,14 +344,14 @@ const formatDate = (date) => {
   })
 }
 
-// Close panel when clicking outside
+
 const handleClickOutside = (event) => {
   if (!event.target.closest('.notifications-panel')) {
     isOpen.value = false
   }
 }
 
-// Lifecycle
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   // Load initial unread count
