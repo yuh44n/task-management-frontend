@@ -279,59 +279,37 @@ const selectedTask = ref({})
 const loadingTaskDetails = ref(false)
 
 const collaborativeTasks = computed(() => {
-  console.log('Tasks in store:', tasksStore.tasks);
-  
-  // First check if we have any tasks with assigned_users
+  // Removed console logs for user information
   const tasksWithAssignments = tasksStore.tasks.filter(task => 
     Array.isArray(task.assigned_users) && task.assigned_users.length > 0
   );
-  console.log('Tasks with assignments:', tasksWithAssignments.length);
-  
-  // Check for any tasks with missing IDs
+
   const tasksWithoutIds = tasksStore.tasks.filter(task => !task.id);
-  if (tasksWithoutIds.length > 0) {
-    console.error('Found tasks without IDs:', tasksWithoutIds);
-  }
-  
+
   const filteredTasks = tasksStore.tasks.filter(task => {
-    // Check if the current user is assigned to this task
     const userAssignment = task.assigned_users?.find(user => 
       user.id === authStore.user?.id
     );
-    
-    // Log each task for debugging
-    console.log('Checking task:', task.id, task.title);
-    console.log('- User assigned:', !!userAssignment);
-    console.log('- Title check:', task.title.startsWith('Collaboration on:'));
-    console.log('- Assigned users:', task.assigned_users);
-    console.log('- Task data structure:', JSON.stringify(task));
-    
-    // Consider it a collaboration if:
-    // 1. The task title starts with 'Collaboration on:'
-    // 2. User is assigned to the task OR user created the task
+
     const isCollaborationTitle = task.title.startsWith('Collaboration on:');
     const isUserInvolved = userAssignment || task.created_by === authStore.user?.id;
-    
+
     return isCollaborationTitle && isUserInvolved;
   });
-  
-  console.log('Filtered collaborative tasks:', filteredTasks);
+
   return filteredTasks;
-})
+});
 
 onMounted(async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    console.log('Fetching tasks for collaborations view')
-    await tasksStore.fetchTasks()
-    console.log('Fetched tasks:', tasksStore.tasks)
-    console.log('Filtered collaborative tasks:', collaborativeTasks.value)
+    await tasksStore.fetchTasks();
   } catch (error) {
-    console.error('Failed to fetch tasks:', error)
+    console.error('Failed to fetch tasks:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
 const openTaskDetails = async (task) => {
   console.log('Opening task details for:', task)
