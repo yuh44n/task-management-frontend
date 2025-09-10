@@ -119,7 +119,7 @@ export function useApi() {
     getUsers: () => api.get('/api/admin/users'),
     updateUserRole: (userId, role) => api.put(`/api/admin/users/${userId}/role`, { role }),
     deleteUser: (userId) => api.delete(`/api/admin/users/${userId}`),
-    getDashboardStats: () => api.get('/api/admin/dashboard-stats'),
+    getDashboardStats: () => api.get('/api/admin/stats'),
     getAllTasks: () => api.get('/api/admin/tasks')
   }
 
